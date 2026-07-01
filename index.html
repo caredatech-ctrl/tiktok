@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Educational Terminal System V7.0</title>
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --neon-green: #00ff41;
+            --neon-blue: #00f3ff;
+            --neon-yellow: #ffeb3b;
+            --neon-red: #ff3333;
+            --dark-bg: #050505;
+            --glass-bg: rgba(10, 15, 20, 0.6);
+            --glass-border: rgba(0, 243, 255, 0.15);
+        }
+
+        body {
+            margin: 0; padding: 0;
+            background-color: var(--dark-bg);
+            color: #e0e0e0;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex; justify-content: center; align-items: center;
+            height: 100vh; overflow: hidden;
+            /* Cyberpunk Grid Background */
+            background-image: 
+                linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px),
+                radial-gradient(circle at 50% 50%, #111 0%, #000 100%);
+            background-size: 30px 30px, 30px 30px, 100% 100%;
+        }
+
+        /* Premium Glassmorphism */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.9), inset 0 0 20px rgba(0, 243, 255, 0.05);
+            width: 450px;
+            display: none;
+            position: relative;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: bootUp 0.4s ease-out forwards;
+        }
+
+        @keyframes bootUp {
+            0% { opacity: 0; transform: scale(0.95) translateY(10px); filter: blur(5px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
+        }
+
+        .terminal-panel {
+            width: 85%; max-width: 900px; height: 70vh;
+            border: 1px solid rgba(0, 255, 65, 0.3);
+            box-shadow: 0 0 30px rgba(0, 255, 65, 0.1), inset 0 0 20px rgba(0, 255, 65, 0.05);
+            padding: 30px;
+            display: none; flex-direction: column;
+            background: rgba(5, 10, 5, 0.9);
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+        }
+
+        h2 {
+            text-align: center; margin-bottom: 25px;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            letter-spacing: 4px; text-transform: uppercase; font-weight: 900;
+        }
+
+        .neon-text { color: var(--neon-green); text-shadow: 0 0 10px rgba(0, 255, 65, 0.5); }
+        .admin-text { color: var(--neon-blue); text-shadow: 0 0 10px rgba(0, 243, 255, 0.5); }
+
+        input, select, button {
+            width: 100%; padding: 14px 16px; margin: 10px 0;
+            border-radius: 8px; border: none; box-sizing: border-box; outline: none;
+            font-weight: bold; font-family: 'Courier New', Courier, monospace; letter-spacing: 1px;
+            transition: all 0.3s ease;
+        }
+
+        input, select {
+            background: rgba(0, 0, 0, 0.6); color: white;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        input:focus, select:focus {
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
+            background: rgba(0, 243, 255, 0.05);
+        }
+
+        select option { background: #0a0a0a; color: var(--neon-blue); }
+
+        .terminal-panel input {
+            background: rgba(0, 255, 65, 0.05);
+            border: 1px solid rgba(0, 255, 65, 0.3);
+            color: var(--neon-green);
+        }
+        .terminal-panel input:focus {
+            box-shadow: 0 0 15px rgba(0, 255, 65, 0.2);
+            border-color: var(--neon-green);
+        }
+
+        button {
+            background: linear-gradient(90deg, #0f2027, #203a43, #2c5364);
+            color: white; cursor: pointer; text-transform: uppercase;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative; overflow: hidden;
+        }
+
+        button:hover {
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.4);
+            transform: translateY(-2px);
+            background: linear-gradient(90deg, #15303b, #2b4d59, #3a6b80);
+        }
+        button:disabled { filter: grayscale(100%); opacity: 0.5; cursor: not-allowed; }
+
+        .terminal-panel button {
+            background: rgba(0, 255, 65, 0.1); border: 1px solid rgba(0, 255, 65, 0.5);
+            color: var(--neon-green); box-shadow: 0 0 10px rgba(0, 255, 65, 0.2);
+        }
+
+        .terminal-panel button:hover {
+            background: rgba(0, 255, 65, 0.3); color: #fff;
+            box-shadow: 0 0 25px rgba(0, 255, 65, 0.6);
+        }
+
+        #terminal-output {
+            flex-grow: 1; overflow-y: auto; margin-top: 20px;
+            border-top: 1px solid rgba(0, 255, 65, 0.2); padding-top: 20px;
+            white-space: pre-wrap; line-height: 1.6; font-size: 15px;
+        }
+
+        /* Screen States */
+        #login-screen { display: block; }
+        #welcome-screen { display: none; }
+        #upload-section, #viewer-section { display: none; margin-top: 20px; border-top: 1px solid var(--glass-border); padding-top: 20px; }
+        
+        .nav-btn {
+            background: rgba(0, 243, 255, 0.05); border-color: rgba(0, 243, 255, 0.3); color: var(--neon-blue);
+            padding: 12px; font-size: 13px;
+        }
+
+        /* Live Database Viewer Styles */
+        .db-item {
+            background: rgba(0, 0, 0, 0.6); border: 1px solid rgba(0, 243, 255, 0.2);
+            padding: 12px; margin-bottom: 10px; border-radius: 6px;
+            display: flex; justify-content: space-between; align-items: center; font-size: 13px;
+            transition: 0.2s;
+        }
+        .db-item:hover { border-color: var(--neon-blue); background: rgba(0, 243, 255, 0.05); }
+        
+        .action-buttons { display: flex; gap: 8px; }
+
+        .db-item-del, .db-item-edit {
+            width: auto; padding: 6px 12px; margin: 0; background: transparent; font-size: 11px;
+        }
+        .db-item-del { border: 1px solid var(--neon-red); color: var(--neon-red); }
+        .db-item-del:hover { background: rgba(255, 51, 51, 0.2); transform: none; box-shadow: none; }
+        
+        .db-item-edit { border: 1px solid var(--neon-yellow); color: var(--neon-yellow); }
+        .db-item-edit:hover { background: rgba(255, 235, 59, 0.2); transform: none; box-shadow: none; }
+
+        /* Boot Sequence Enhancements */
+        .progress-container {
+            width: 100%; height: 4px; background: rgba(255, 255, 255, 0.05);
+            border-radius: 2px; margin-top: 25px; overflow: hidden;
+        }
+        #progress-bar {
+            width: 0%; height: 100%; background: var(--neon-blue);
+            box-shadow: 0 0 15px var(--neon-blue); transition: width 0.1s linear;
+        }
+
+        #boot-log {
+            font-size: 12px; color: #888; margin-top: 25px; height: 130px;
+            text-align: left; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end;
+        }
+
+        .cursor::after { content: '█'; animation: blink 1s step-start infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(0, 255, 65, 0.3); border-radius: 3px; }
+        .glass-panel::-webkit-scrollbar-thumb { background: rgba(0, 243, 255, 0.3); }
+        
+        /* Loader */
+        .spinner {
+            display: inline-block; width: 15px; height: 15px;
+            border: 2px solid rgba(0, 243, 255, 0.3); border-radius: 50%;
+            border-top-color: var(--neon-blue); animation: spin 1s ease-in-out infinite; margin-left: 10px; vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <!-- 1. LOGIN SCREEN -->
+    <div id="login-screen" class="glass-panel">
+        <h2 style="color: #fff; text-shadow: 0 0 15px rgba(255,255,255,0.3);">AUTH_GATEWAY</h2>
+        <input type="text" id="username" placeholder="Operator ID" autocomplete="off">
+        <input type="password" id="password" placeholder="Passkey">
+        <button onclick="handleLogin()">AUTHENTICATE <span id="login-spinner" class="spinner" style="display:none;"></span></button>
+        <p id="login-msg" style="color: var(--neon-red); text-align: center; font-size: 13px; margin-top: 20px; font-weight: bold;"></p>
+    </div>
+
+    <!-- 2. HIGH-CLASS INITIALIZATION SCREEN -->
+    <div id="welcome-screen" class="glass-panel">
+        <h2 id="welcome-title" class="neon-text" style="margin-bottom: 10px;">AUTHORIZATION VALID</h2>
+        <div class="progress-container"><div id="progress-bar"></div></div>
+        <div id="boot-log"></div>
+    </div>
+
+    <!-- 3. ADMIN PANEL -->
+    <div id="admin-screen" class="glass-panel" style="width: 500px;">
+        <h2 class="admin-text">SYS_ADMIN CONSOLE</h2>
+        
+        <button class="nav-btn" onclick="toggleSection('upload-section')">[+] TOGGLE INJECTION PORTAL</button>
+        <button class="nav-btn" onclick="toggleSection('viewer-section')">[+] VIEW LIVE DATABANKS</button>
+        
+        <!-- UPLOAD SECTION -->
+        <div id="upload-section">
+            <input type="text" id="target-id" placeholder="Target ID (@username)">
+            <input type="text" id="target-name" placeholder="Full Name">
+            <input type="text" id="target-address" placeholder="Address Data">
+            <input type="text" id="target-cnic" placeholder="Identification Number">
+            <input type="text" id="target-mobile" placeholder="Primary Mobile Number">
+            <select id="target-network">
+                <option value="" disabled selected>Select Network Provider...</option>
+                <option value="Jazz / Mobilink">Jazz / Mobilink</option>
+                <option value="Zong / CMPak">Zong / CMPak</option>
+                <option value="Telenor Pakistan">Telenor Pakistan</option>
+                <option value="Ufone">Ufone</option>
+                <option value="SCOM">SCOM</option>
+            </select>
+            <input type="text" id="target-other-number" placeholder="Alternate Number (Optional)">
+
+            <button id="inject-btn" onclick="uploadData()" style="background: rgba(0, 243, 255, 0.1); border-color: var(--neon-blue); color: var(--neon-blue); margin-top: 15px;">ENCRYPT & INJECT <span id="inject-spinner" class="spinner" style="display:none;"></span></button>
+            <p id="admin-msg" style="color: var(--neon-green); text-align: center; font-size: 12px; margin-top: 15px; min-height: 15px;"></p>
+        </div>
+
+        <!-- VIEWER SECTION -->
+        <div id="viewer-section">
+            <h3 style="text-align: center; font-size: 12px; margin-top: 0; margin-bottom: 20px; color: #888; letter-spacing: 2px;">LIVE SUPABASE CONNECTION ACTIVE</h3>
+            <div id="database-list" style="max-height: 280px; overflow-y: auto; margin-bottom: 20px; padding-right: 5px;"></div>
+            <button onclick="clearAllData()" style="background: rgba(255, 51, 51, 0.1); border-color: var(--neon-red); color: var(--neon-red); font-size: 12px; padding: 12px;">[!] PURGE ALL RECORDS</button>
+        </div>
+
+        <button onclick="logout()" style="background: rgba(255, 255, 255, 0.05); border-color: rgba(255,255,255,0.2); color: #aaa; margin-top: 30px;">CLOSE SESSION</button>
+    </div>
+
+    <!-- 4. TERMINAL PANEL -->
+    <div id="terminal-screen" class="terminal-panel">
+        <h2 class="neon-text">OSINT QUERY TERMINAL V7.0</h2>
+        <div style="display: flex; gap: 15px;">
+            <input type="text" id="search-id" placeholder="Enter Target ID to scan live network...">
+            <button id="exec-btn" onclick="startSearch()" style="width: 200px; font-size: 16px; letter-spacing: 2px;">EXECUTE</button>
+        </div>
+        <div id="terminal-output" class="neon-text cursor">System Online. Connected to secure mainframe. Awaiting input...</div>
+        <button onclick="logout()" style="margin-top: 20px; border-color: var(--neon-red); color: var(--neon-red); background: rgba(255,51,51,0.05); width: 220px; align-self: flex-end;">DISCONNECT</button>
+    </div>
+
+    <script>
+        // --- SUPABASE INITIALIZATION ---
+        const SUPABASE_URL = 'https://adqiprobgmyzsxrwrjdo.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkcWlwcm9iZ215enN4cndyamRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4ODc5NDYsImV4cCI6MjA5ODQ2Mzk0Nn0.G8gEWElZs6eftJ4sRWCDx6fhyEX_icutmIPMWcQnefQ';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // --- EVENT LISTENERS ---
+        document.addEventListener('DOMContentLoaded', () => {
+            ['username', 'password'].forEach(id => {
+                document.getElementById(id).addEventListener('keypress', e => { if (e.key === 'Enter') handleLogin(); });
+            });
+            document.getElementById('search-id').addEventListener('keypress', e => { if (e.key === 'Enter') startSearch(); });
+        });
+
+        // --- AUTH LOGIC ---
+        function handleLogin() {
+            const user = document.getElementById('username').value.trim();
+            const pass = document.getElementById('password').value.trim();
+            const msg = document.getElementById('login-msg');
+            const spinner = document.getElementById('login-spinner');
+            msg.innerText = ""; spinner.style.display = 'inline-block';
+
+            setTimeout(() => { // Simulated Auth Delay for realism
+                spinner.style.display = 'none';
+                if (user === 'Admin_Alpha' && pass === 'RootAccess99') {
+                    runBootSequence('admin', 'ADMIN OVERRIDE');
+                } else if (user === 'User_Beta' && pass === 'ViewOnly77') {
+                    runBootSequence('terminal', 'ACCESS GRANTED');
+                } else {
+                    msg.innerText = ">> ERR: INVALID CREDENTIALS <<";
+                    const loginBox = document.getElementById('login-screen');
+                    loginBox.style.transform = "translateX(-10px)";
+                    setTimeout(() => loginBox.style.transform = "translateX(10px)", 50);
+                    setTimeout(() => loginBox.style.transform = "translateX(-10px)", 100);
+                    setTimeout(() => loginBox.style.transform = "translateX(0)", 150);
+                }
+            }, 800);
+        }
+
+        // --- BOOT SEQUENCE ANIMATION ---
+        function runBootSequence(role, titleText) {
+            document.getElementById('login-screen').style.display = 'none';
+            const titleEl = document.getElementById('welcome-title');
+            titleEl.innerText = titleText;
+            titleEl.className = role === 'admin' ? 'admin-text' : 'neon-text';
+            
+            document.getElementById('welcome-screen').style.display = 'block';
+            const bootLog = document.getElementById('boot-log');
+            const progressBar = document.getElementById('progress-bar');
+            
+            progressBar.style.backgroundColor = role === 'admin' ? 'var(--neon-blue)' : 'var(--neon-green)';
+            progressBar.style.boxShadow = `0 0 20px ${role === 'admin' ? 'var(--neon-blue)' : 'var(--neon-green)'}`;
+            bootLog.innerHTML = ""; progressBar.style.width = "0%";
+
+            const bootSteps = [
+                "Establishing secure connection to Supabase mainframe...",
+                "Bypassing external firewalls...",
+                "Decrypting shadow databanks via API...",
+                "Mounting dynamic UI structures...",
+                "Sequence Complete. Handshaking..."
+            ];
+
+            let stepCount = 0; let progress = 0;
+            const barInterval = setInterval(() => {
+                progress += 2; progressBar.style.width = progress + "%";
+                if (progress >= 100) clearInterval(barInterval);
+            }, 40);
+
+            const textInterval = setInterval(() => {
+                if (stepCount < bootSteps.length) {
+                    bootLog.innerHTML += `<div style="margin-bottom: 5px;">> ${bootSteps[stepCount]}</div>`;
+                    stepCount++;
+                } else {
+                    clearInterval(textInterval);
+                    setTimeout(() => finishBoot(role), 500); 
+                }
+            }, 400);
+        }
+
+        function finishBoot(role) {
+            document.getElementById('welcome-screen').style.display = 'none';
+            if (role === 'admin') { document.getElementById('admin-screen').style.display = 'block'; } 
+            else { document.getElementById('terminal-screen').style.display = 'flex'; document.getElementById('search-id').focus(); }
+        }
+
+        function toggleSection(sectionId) {
+            const section = document.getElementById(sectionId);
+            if (section.style.display === 'none' || section.style.display === '') {
+                section.style.display = 'block';
+                if(sectionId === 'viewer-section') renderDatabase();
+            } else { section.style.display = 'none'; }
+        }
+
+        // --- SUPABASE LIVE ADMIN LOGIC ---
+        async function renderDatabase() {
+            const list = document.getElementById('database-list');
+            list.innerHTML = '<p style="text-align: center; color: var(--neon-blue);">Pulling from Supabase...</p>'; 
+            
+            const { data, error } = await supabase.from('osint_records').select('*').order('last_updated', { ascending: false });
+
+            if (error) { list.innerHTML = `<p style="color: var(--neon-red);">API Error: ${error.message}</p>`; return; }
+            if (!data || data.length === 0) {
+                list.innerHTML = '<p style="text-align: center; color: #555; font-style: italic;">No records found in live database.</p>';
+                return;
+            }
+
+            list.innerHTML = '';
+            data.forEach(row => {
+                const item = document.createElement('div');
+                item.className = 'db-item';
+                item.innerHTML = `
+                    <div style="flex-grow: 1;">
+                        <strong style="color: var(--neon-blue); font-size: 15px;">${row.target_id}</strong><br>
+                        <span style="color: #aaa;">${row.name !== 'DATA_MISSING' ? row.name : 'Unknown Identity'}</span>
+                    </div>
+                    <div class="action-buttons">
+                        <button class="db-item-edit" onclick="editRecord('${row.target_id}')">EDIT</button>
+                        <button class="db-item-del" onclick="deleteRecord('${row.target_id}')">DEL</button>
+                    </div>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        async function editRecord(id) {
+            const { data, error } = await supabase.from('osint_records').select('*').eq('target_id', id).single();
+            if (error || !data) return;
+
+            document.getElementById('upload-section').style.display = 'block';
+            document.getElementById('target-id').value = data.target_id;
+            document.getElementById('target-name').value = data.name !== "DATA_MISSING" ? data.name : "";
+            document.getElementById('target-address').value = data.address !== "DATA_MISSING" ? data.address : "";
+            document.getElementById('target-cnic').value = data.cnic !== "DATA_MISSING" ? data.cnic : "";
+            document.getElementById('target-mobile').value = data.mobile !== "DATA_MISSING" ? data.mobile : "";
+            
+            if (data.network && data.network !== "UNKNOWN") { document.getElementById('target-network').value = data.network; } 
+            else { document.getElementById('target-network').selectedIndex = 0; }
+            
+            document.getElementById('target-other-number').value = data.other_number !== "NONE" ? data.other_number : "";
+
+            const msg = document.getElementById('admin-msg');
+            msg.style.color = 'var(--neon-yellow)';
+            msg.innerText = `>> API EDIT MODE OVERRIDE FOR [${id}] <<`;
+            
+            const btn = document.getElementById('inject-btn');
+            btn.style.borderColor = 'var(--neon-yellow)'; btn.style.color = 'var(--neon-yellow)';
+            btn.innerHTML = 'UPDATE RECORD <span id="inject-spinner" class="spinner" style="display:none; border-top-color: var(--neon-yellow);"></span>';
+            document.getElementById('upload-section').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        async function uploadData() {
+            const id = document.getElementById('target-id').value.trim();
+            const msg = document.getElementById('admin-msg');
+            const spinner = document.getElementById('inject-spinner');
+            
+            if (!id) { msg.style.color = 'var(--neon-red)'; msg.innerText = ">> ERR: TARGET ID REQUIRED <<"; return; }
+
+            spinner.style.display = 'inline-block';
+            document.getElementById('inject-btn').disabled = true;
+
+            const payload = {
+                target_id: id,
+                name: document.getElementById('target-name').value || "DATA_MISSING",
+                address: document.getElementById('target-address').value || "DATA_MISSING",
+                cnic: document.getElementById('target-cnic').value || "DATA_MISSING",
+                mobile: document.getElementById('target-mobile').value || "DATA_MISSING",
+                network: document.getElementById('target-network').value || "UNKNOWN",
+                other_number: document.getElementById('target-other-number').value || "NONE",
+                last_updated: new Date().toISOString()
+            };
+
+            // Using UPSERT to either create or update existing row
+            const { error } = await supabase.from('osint_records').upsert(payload);
+
+            spinner.style.display = 'none';
+            document.getElementById('inject-btn').disabled = false;
+
+            if(error) {
+                msg.style.color = 'var(--neon-red)'; msg.innerText = `>> DB ERR: ${error.message}`; return;
+            }
+
+            msg.style.color = 'var(--neon-green)';
+            msg.innerText = `>> SUCCESS: CLOUD DATA SYNCED FOR [${id}] <<`;
+            
+            const btn = document.getElementById('inject-btn');
+            btn.style.borderColor = 'var(--neon-blue)'; btn.style.color = 'var(--neon-blue)';
+            btn.innerHTML = 'ENCRYPT & INJECT <span id="inject-spinner" class="spinner" style="display:none;"></span>';
+
+            document.querySelectorAll('#upload-section input').forEach(input => input.value = '');
+            document.getElementById('target-network').selectedIndex = 0;
+            
+            if(document.getElementById('viewer-section').style.display === 'block') { renderDatabase(); }
+        }
+
+        async function deleteRecord(id) {
+            if(confirm(`WARNING: Erase [${id}] from live Supabase network?`)) {
+                await supabase.from('osint_records').delete().eq('target_id', id);
+                renderDatabase(); 
+            }
+        }
+
+        async function clearAllData() {
+            if(confirm('CRITICAL: Purge ALL live data from Supabase?')) {
+                // A blanket delete filter
+                await supabase.from('osint_records').delete().neq('target_id', 'NON_EXISTENT_DUMMY_STRING');
+                renderDatabase(); 
+            }
+        }
+
+        // --- SUPABASE TERMINAL QUERY LOGIC ---
+        async function startSearch() {
+            const searchId = document.getElementById('search-id').value.trim();
+            const output = document.getElementById('terminal-output');
+            const btn = document.getElementById('exec-btn');
+            const input = document.getElementById('search-id');
+            
+            if (!searchId) {
+                output.innerHTML += "\n> ERR: NO TARGET ID PROVIDED.\n";
+                output.scrollTop = output.scrollHeight; return;
+            }
+
+            input.disabled = true; btn.disabled = true;
+
+            output.innerHTML += `\n> INITIATING CLOUD TRACE FOR: [${searchId}]...\n`;
+            output.innerHTML += `> SCANNING SUPABASE PROTOCOLS...\n`;
+
+            // Start simulated extraction visual while doing real API call
+            let progress = 0;
+            const loadingInterval = setInterval(() => {
+                progress += 15;
+                if(progress <= 90) {
+                    output.innerHTML += `> EXTRACTING FRAGMENTS... [${progress}%]\n`;
+                    output.scrollTop = output.scrollHeight;
+                }
+            }, 400);
+
+            // Real API Query (Searching exact or ignoring '@' symbol via ilike)
+            const cleanSearchId = searchId.startsWith('@') ? searchId.substring(1) : searchId;
+            
+            const { data, error } = await supabase.from('osint_records')
+                .select('*')
+                .or(`target_id.ilike.%${cleanSearchId}%,target_id.ilike.%@${cleanSearchId}%`)
+                .limit(1);
+
+            // Ensure visual delay finishes for dramatic effect
+            setTimeout(() => {
+                clearInterval(loadingInterval);
+                output.innerHTML += `> EXTRACTING FRAGMENTS... [100%]\n`;
+                displayResult(data && data.length > 0 ? data[0] : null, searchId, error);
+                
+                input.disabled = false; btn.disabled = false;
+                input.value = ''; input.focus();
+            }, 2500);
+        }
+
+        function displayResult(result, originalQuery, error) {
+            const output = document.getElementById('terminal-output');
+            
+            if(error) {
+                output.innerHTML += `\n> NETWORK ERR: ${error.message}\n`;
+            } else if (result) {
+                output.innerHTML += `\n> DECRYPTION COMPLETE. 100%\n`;
+                output.innerHTML += `\n+------------------------------------------------+\n`;
+                output.innerHTML += `|  TARGET ACQUIRED (LIVE DB)                     |\n`;
+                output.innerHTML += `+------------------------------------------------+\n`;
+                output.innerHTML += `  ID      : ${result.target_id}\n`;
+                output.innerHTML += `  NAME    : ${result.name}\n`;
+                output.innerHTML += `  ADDRESS : ${result.address}\n`;
+                output.innerHTML += `  CNIC    : ${result.cnic}\n`;
+                output.innerHTML += `  MOBILE  : ${result.mobile} [${result.network}]\n`;
+                output.innerHTML += `  ALT NUM : ${result.other_number}\n`;
+                output.innerHTML += `  UPDATED : ${new Date(result.last_updated).toLocaleString()}\n`;
+                output.innerHTML += `+------------------------------------------------+\n`;
+            } else {
+                output.innerHTML += `\n> DECRYPTION COMPLETE. 100%\n`;
+                output.innerHTML += `> ERR: 404 - NO CLOUD RECORDS FOUND FOR [${originalQuery}]\n`;
+            }
+            output.innerHTML += `> SYSTEM AWAITING NEXT QUERY...\n`;
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function logout() {
+            document.getElementById('admin-screen').style.display = 'none';
+            document.getElementById('terminal-screen').style.display = 'none';
+            document.getElementById('upload-section').style.display = 'none';
+            document.getElementById('viewer-section').style.display = 'none';
+            document.getElementById('welcome-screen').style.display = 'none';
+            document.getElementById('login-screen').style.display = 'block';
+            
+            document.getElementById('username').value = ''; document.getElementById('password').value = '';
+            document.getElementById('login-msg').innerText = ''; document.getElementById('admin-msg').innerText = '';
+            
+            const btn = document.getElementById('inject-btn');
+            btn.style.borderColor = 'var(--neon-blue)'; btn.style.color = 'var(--neon-blue)';
+            btn.innerHTML = 'ENCRYPT & INJECT <span id="inject-spinner" class="spinner" style="display:none;"></span>';
+
+            document.getElementById('terminal-output').innerHTML = 'System Online. Connected to secure mainframe. Awaiting input...';
+        }
+    </script>
+</body>
+</html>
