@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ENTERPRISE OSINT TERMINAL V8.0</title>
-    <!-- Supabase JS CDN -->
+    <title>ENTERPRISE OSINT TERMINAL V9.0</title>
+    <!-- Supabase JS & FontAwesome -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- FontAwesome for Enterprise Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
@@ -14,16 +13,16 @@
            ENTERPRISE CSS ARCHITECTURE
            ========================================================================== */
         :root {
-            --pri-bg: #03070b;
-            --sec-bg: rgba(10, 16, 26, 0.75);
-            --accent-cyan: #00f3ff;
-            --accent-green: #00ff41;
-            --accent-red: #ff3333;
-            --accent-yellow: #ffeb3b;
-            --text-main: #e2e8f0;
+            --bg-deep: #020617;
+            --bg-panel: rgba(15, 23, 42, 0.85);
+            --bg-input: rgba(0, 0, 0, 0.6);
+            --cyan-glow: #00f3ff;
+            --green-glow: #10b981;
+            --red-glow: #ef4444;
+            --yellow-glow: #f59e0b;
+            --text-main: #f8fafc;
             --text-dim: #94a3b8;
-            --glass-border: rgba(0, 243, 255, 0.15);
-            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+            --border-glass: rgba(0, 243, 255, 0.2);
             --font-mono: 'Courier New', Courier, monospace;
             --font-sans: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
         }
@@ -31,448 +30,494 @@
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            background-color: var(--pri-bg); color: var(--text-main); font-family: var(--font-sans);
-            height: 100vh; overflow: hidden; display: flex; justify-content: center; align-items: center;
-            position: relative;
+            background-color: var(--bg-deep); color: var(--text-main); font-family: var(--font-sans);
+            height: 100vh; width: 100vw; overflow: hidden; position: relative;
+            background-image: radial-gradient(circle at 50% 50%, #0f172a 0%, #020617 100%);
         }
 
-        /* Particle Background Canvas */
-        #bg-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; opacity: 0.4; }
-
-        /* Generic Glass Panel */
-        .glass-panel {
-            background: var(--sec-bg); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-            border: 1px solid var(--glass-border); border-radius: 12px; padding: 35px;
-            box-shadow: var(--glass-shadow); position: relative; z-index: 10;
-            display: none; animation: fadeInScale 0.4s ease forwards;
+        /* Screen Isolation Mechanism (FIXES THE DISPLAY BUG) */
+        .screen-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: none; justify-content: center; align-items: center; z-index: 10;
         }
+        .screen-container.active { display: flex; animation: fadeIn 0.4s ease forwards; }
 
-        @keyframes fadeInScale {
-            0% { opacity: 0; transform: scale(0.95) translateY(10px); }
-            100% { opacity: 1; transform: scale(1) translateY(0); }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+
+        /* Glass Panels */
+        .glass-box {
+            background: var(--bg-panel); backdrop-filter: blur(20px); border: 1px solid var(--border-glass);
+            border-radius: 12px; padding: 40px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
         }
 
         /* Typography & Inputs */
-        h1, h2, h3 { font-weight: 800; text-transform: uppercase; letter-spacing: 2px; text-align: center; margin-bottom: 25px; }
-        .text-cyan { color: var(--accent-cyan); text-shadow: 0 0 10px rgba(0, 243, 255, 0.4); }
-        .text-green { color: var(--accent-green); text-shadow: 0 0 10px rgba(0, 255, 65, 0.4); }
-        
-        .input-group { position: relative; margin-bottom: 15px; }
-        .input-group i { position: absolute; left: 15px; top: 15px; color: var(--text-dim); }
+        h1, h2, h3, h4 { text-transform: uppercase; letter-spacing: 2px; font-weight: 800; margin-bottom: 20px; }
+        .text-cyan { color: var(--cyan-glow); text-shadow: 0 0 10px rgba(0, 243, 255, 0.3); }
+        .text-green { color: var(--green-glow); }
+        .text-red { color: var(--red-glow); }
+
+        .input-group { position: relative; margin-bottom: 15px; width: 100%; }
+        .input-group i { position: absolute; left: 15px; top: 16px; color: var(--text-dim); }
         input, select {
-            width: 100%; padding: 14px 14px 14px 45px; background: rgba(0,0,0,0.5); color: white;
+            width: 100%; padding: 15px 15px 15px 45px; background: var(--bg-input); color: white;
             border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; font-family: var(--font-mono);
-            transition: all 0.3s; font-size: 14px;
+            font-size: 14px; transition: 0.3s; outline: none;
         }
-        input:focus, select:focus { border-color: var(--accent-cyan); box-shadow: 0 0 15px rgba(0, 243, 255, 0.2); outline: none; }
-        
+        input:focus, select:focus { border-color: var(--cyan-glow); box-shadow: 0 0 15px rgba(0, 243, 255, 0.2); }
+        select option { background: #020617; color: var(--cyan-glow); }
+
         button {
-            width: 100%; padding: 14px; background: linear-gradient(90deg, #0f2027, #203a43, #2c5364);
-            color: white; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px;
-            font-weight: bold; cursor: pointer; text-transform: uppercase; transition: 0.3s; position: relative; overflow: hidden;
+            width: 100%; padding: 15px; background: linear-gradient(90deg, #0891b2, #0369a1);
+            color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;
+            text-transform: uppercase; transition: 0.3s; letter-spacing: 1px;
         }
-        button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0, 243, 255, 0.3); background: linear-gradient(90deg, #15303b, #2b4d59, #3a6b80); }
-        button:disabled { filter: grayscale(1); cursor: not-allowed; transform: none; }
+        button:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0, 243, 255, 0.3); }
+        button.danger { background: linear-gradient(90deg, #b91c1c, #991b1b); }
+        button.danger:hover { box-shadow: 0 10px 20px rgba(239, 68, 68, 0.3); }
+        button.outline { background: transparent; border: 1px solid var(--border-glass); color: var(--cyan-glow); }
+        button.outline:hover { background: rgba(0, 243, 255, 0.1); }
 
-        /* Login Screen */
-        #login-container { width: 400px; }
+        /* Login & Boot specific */
+        #login-box { width: 450px; text-align: center; }
+        #boot-box { width: 700px; text-align: left; }
+        .progress-track { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; margin: 20px 0; }
+        #boot-progress { width: 0%; height: 100%; background: var(--cyan-glow); box-shadow: 0 0 10px var(--cyan-glow); transition: 0.1s; }
+        #boot-logs { height: 150px; font-family: var(--font-mono); font-size: 13px; color: var(--text-dim); display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden; }
 
-        /* Boot Sequence */
-        #boot-screen { width: 600px; text-align: left; font-family: var(--font-mono); }
-        .progress-bar-bg { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin: 20px 0; overflow: hidden; }
-        #boot-progress { width: 0%; height: 100%; background: var(--accent-cyan); box-shadow: 0 0 10px var(--accent-cyan); transition: width 0.1s linear; }
-        #boot-logs { font-size: 13px; color: var(--text-dim); height: 150px; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; }
-
-        /* Admin Cockpit */
-        #admin-container { width: 90vw; max-width: 1200px; height: 85vh; display: flex; flex-direction: column; padding: 0; overflow: hidden; }
-        .admin-header { padding: 20px 30px; background: rgba(0,0,0,0.4); border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; }
-        .admin-header h2 { margin: 0; font-size: 18px; }
-        .admin-layout { display: flex; flex-grow: 1; height: calc(100% - 70px); }
+        /* Workspace Architecture */
+        #workspace-layout { display: flex; width: 100vw; height: 100vh; }
         
-        .sidebar { width: 250px; background: rgba(0,0,0,0.3); border-right: 1px solid var(--glass-border); padding: 20px; display: flex; flex-direction: column; gap: 10px; }
-        .nav-item { padding: 12px 15px; border-radius: 6px; cursor: pointer; transition: 0.2s; color: var(--text-dim); font-weight: bold; font-size: 13px; border: 1px solid transparent; display: flex; align-items: center; gap: 10px; }
-        .nav-item:hover, .nav-item.active { background: rgba(0, 243, 255, 0.1); color: var(--accent-cyan); border-color: rgba(0, 243, 255, 0.2); }
+        /* Sidebar */
+        .sidebar { width: 280px; background: rgba(15, 23, 42, 0.95); border-right: 1px solid var(--border-glass); display: flex; flex-direction: column; padding: 20px; z-index: 20; }
+        .brand { text-align: center; padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; }
+        .nav-item { padding: 15px; border-radius: 8px; cursor: pointer; color: var(--text-dim); font-weight: bold; margin-bottom: 10px; display: flex; align-items: center; gap: 15px; transition: 0.3s; border: 1px solid transparent; }
+        .nav-item i { font-size: 18px; width: 20px; text-align: center; }
+        .nav-item:hover, .nav-item.active { background: rgba(0, 243, 255, 0.1); color: var(--cyan-glow); border-color: rgba(0, 243, 255, 0.2); }
         
-        .main-content { flex-grow: 1; padding: 30px; overflow-y: auto; position: relative; }
-        .content-section { display: none; animation: fadeInScale 0.3s; }
-        .content-section.active { display: block; }
+        /* Main Content Area */
+        .main-content { flex-grow: 1; position: relative; background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAAXNSR0IEME9M9cSy9FvfHvcx2gMPkp1H5Dj4YaKufPRsAyon8Tf///9MgjoJCXHqkAEAqSgR+R52QjAAAAAASUVORK5CYII=') repeat; }
+        .view-section { display: none; width: 100%; height: 100%; padding: 30px; overflow-y: auto; animation: fadeIn 0.3s; }
+        .view-section.active { display: block; }
 
-        /* Grid Layouts for Admin Forms */
-        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; }
-        .full-width { grid-column: 1 / -1; }
+        /* Unified Terminal + Inject View (The core requirement) */
+        .split-workspace { display: flex; gap: 30px; height: calc(100vh - 60px); }
+        
+        /* Left: Terminal */
+        .terminal-wrapper { flex-grow: 1; background: rgba(0, 0, 0, 0.8); border: 1px solid var(--green-glow); border-radius: 12px; display: flex; flex-direction: column; box-shadow: inset 0 0 30px rgba(16, 185, 129, 0.1); }
+        .term-header { background: rgba(16, 185, 129, 0.1); padding: 15px 20px; border-bottom: 1px solid rgba(16, 185, 129, 0.3); color: var(--green-glow); font-weight: bold; display: flex; justify-content: space-between; }
+        .term-body { flex-grow: 1; padding: 20px; overflow-y: auto; color: var(--green-glow); font-family: var(--font-mono); font-size: 15px; white-space: pre-wrap; line-height: 1.6; text-shadow: 0 0 5px rgba(16, 185, 129, 0.4); }
+        .term-input-area { display: flex; padding: 15px 20px; background: rgba(0, 0, 0, 0.5); border-top: 1px solid rgba(16, 185, 129, 0.3); align-items: center; }
+        .term-prompt { color: var(--green-glow); font-weight: bold; margin-right: 15px; }
+        #cmd-input { background: transparent; border: none; color: white; flex-grow: 1; font-family: var(--font-mono); font-size: 16px; outline: none; padding: 0; box-shadow: none; }
 
-        /* Data Tables */
-        .data-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
-        .data-table th, .data-table td { padding: 12px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .data-table th { color: var(--accent-cyan); font-weight: bold; background: rgba(0,0,0,0.5); text-transform: uppercase; }
-        .data-table tr:hover { background: rgba(0, 243, 255, 0.05); }
-        .action-btn { width: auto; padding: 6px 12px; font-size: 11px; margin-right: 5px; }
-        .btn-edit { border-color: var(--accent-yellow); color: var(--accent-yellow); background: transparent; }
-        .btn-del { border-color: var(--accent-red); color: var(--accent-red); background: transparent; }
+        /* Right: Injection Form (Visible only to Admin) */
+        .inject-wrapper { width: 450px; background: var(--bg-panel); border: 1px solid var(--border-glass); border-radius: 12px; padding: 25px; display: none; flex-direction: column; overflow-y: auto; }
+        .inject-wrapper.visible { display: flex; }
 
-        /* Terminal Screen */
-        #terminal-container { width: 85vw; max-width: 1000px; height: 80vh; background: rgba(5, 10, 5, 0.95); border: 1px solid var(--accent-green); box-shadow: 0 0 30px rgba(0, 255, 65, 0.1); padding: 0; display: flex; flex-direction: column; font-family: var(--font-mono); }
-        .term-header { background: rgba(0, 255, 65, 0.1); padding: 15px 25px; border-bottom: 1px solid rgba(0, 255, 65, 0.3); display: flex; justify-content: space-between; align-items: center; }
-        .term-body { flex-grow: 1; padding: 25px; overflow-y: auto; color: var(--accent-green); white-space: pre-wrap; line-height: 1.6; font-size: 14px; text-shadow: 0 0 5px rgba(0, 255, 65, 0.3); }
-        .term-input-line { display: flex; padding: 15px 25px; background: rgba(0,0,0,0.5); border-top: 1px solid rgba(0, 255, 65, 0.2); align-items: center; }
-        .term-prompt { color: var(--accent-green); margin-right: 15px; font-weight: bold; }
-        .term-input { flex-grow: 1; background: transparent; border: none; color: white; outline: none; font-size: 16px; font-family: var(--font-mono); padding: 0; }
+        /* Data Tables for Databanks/Directory */
+        .table-box { background: var(--bg-panel); border: 1px solid var(--border-glass); border-radius: 12px; padding: 25px; overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        th { color: var(--cyan-glow); font-weight: bold; text-transform: uppercase; background: rgba(0,0,0,0.3); }
+        tr:hover { background: rgba(0, 243, 255, 0.05); }
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; border: 1px solid; }
+        .badge.admin { color: var(--cyan-glow); border-color: var(--cyan-glow); background: rgba(0, 243, 255, 0.1); }
+        .badge.user { color: var(--yellow-glow); border-color: var(--yellow-glow); background: rgba(245, 158, 11, 0.1); }
 
         /* Toast Notifications */
-        #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
-        .toast { background: rgba(20, 20, 20, 0.95); border-left: 4px solid var(--accent-cyan); color: white; padding: 15px 20px; border-radius: 4px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); font-family: var(--font-sans); font-size: 14px; display: flex; align-items: center; gap: 12px; min-width: 300px; animation: slideInRight 0.3s ease forwards; }
-        .toast.error { border-left-color: var(--accent-red); }
-        .toast.success { border-left-color: var(--accent-green); }
-        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        @keyframes fadeOut { to { opacity: 0; transform: translateY(-10px); } }
-
-        /* Spinners */
-        .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: #fff; animation: spin 1s linear infinite; vertical-align: middle; margin-left: 10px; }
+        #toast-box { position: fixed; bottom: 30px; right: 30px; z-index: 9999; display: flex; flex-direction: column; gap: 15px; }
+        .toast { background: rgba(15, 23, 42, 0.95); border-left: 5px solid var(--cyan-glow); padding: 15px 25px; border-radius: 6px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 15px; min-width: 300px; animation: slideIn 0.3s forwards; }
+        .toast.success { border-left-color: var(--green-glow); }
+        .toast.error { border-left-color: var(--red-glow); }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        
+        .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: white; animation: spin 1s linear infinite; margin-left: 10px; }
         @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
-    <!-- Cyberpunk Background -->
-    <canvas id="bg-canvas"></canvas>
-
-    <!-- Toast Notifications Container -->
-    <div id="toast-container"></div>
+    <div id="toast-box"></div>
 
     <!-- ==========================================
-         MODULE 1: AUTHENTICATION GATEWAY
+         SCREEN 1: LOGIN GATEWAY
          ========================================== -->
-    <div id="login-container" class="glass-panel" style="display: block;">
-        <h2 class="text-cyan"><i class="fa-solid fa-fingerprint"></i> AUTH_GATEWAY</h2>
-        <div class="input-group">
-            <i class="fa-solid fa-user"></i>
-            <input type="text" id="login-user" placeholder="Operator Identity" autocomplete="off">
-        </div>
-        <div class="input-group">
-            <i class="fa-solid fa-lock"></i>
-            <input type="password" id="login-pass" placeholder="Secure Passkey">
-        </div>
-        <button id="btn-login" onclick="SystemApp.authenticate()">
-            Initialize Connection <span id="login-spin" class="spinner" style="display:none;"></span>
-        </button>
-    </div>
-
-    <!-- ==========================================
-         MODULE 2: BOOT SEQUENCE SYSTEM
-         ========================================== -->
-    <div id="boot-screen" class="glass-panel">
-        <h2 id="boot-title" class="text-cyan">HANDSHAKE ESTABLISHED</h2>
-        <div class="progress-bar-bg"><div id="boot-progress"></div></div>
-        <div id="boot-logs"></div>
-    </div>
-
-    <!-- ==========================================
-         MODULE 3: ENTERPRISE ADMIN COCKPIT
-         ========================================== -->
-    <div id="admin-container" class="glass-panel">
-        <div class="admin-header">
-            <h2 class="text-cyan"><i class="fa-solid fa-server"></i> SYS_ADMIN MASTER CONSOLE V8</h2>
-            <div>
-                <span style="color:var(--text-dim); margin-right:15px; font-size:12px;">STATUS: <span class="text-green">ONLINE</span></span>
-                <button onclick="SystemApp.logout()" style="width:auto; padding:8px 15px; font-size:12px; border-color:var(--accent-red); color:var(--accent-red); background:transparent;"><i class="fa-solid fa-power-off"></i> Disconnect</button>
+    <div id="screen-login" class="screen-container active">
+        <div id="login-box" class="glass-box">
+            <div style="font-size: 40px; color: var(--cyan-glow); margin-bottom: 20px;"><i class="fa-solid fa-fingerprint"></i></div>
+            <h2 class="text-cyan">AUTH_GATEWAY V9</h2>
+            <div class="input-group">
+                <i class="fa-solid fa-user-astronaut"></i>
+                <input type="text" id="login-user" placeholder="Operator Identification" autocomplete="off">
             </div>
+            <div class="input-group">
+                <i class="fa-solid fa-key"></i>
+                <input type="password" id="login-pass" placeholder="Secure Passkey">
+            </div>
+            <button onclick="AppCore.authenticate()" id="btn-login" style="margin-top: 10px;">
+                Initialize Connection <span id="spin-login" class="spinner" style="display:none;"></span>
+            </button>
         </div>
-        <div class="admin-layout">
-            <!-- Navigation Sidebar -->
+    </div>
+
+    <!-- ==========================================
+         SCREEN 2: SYSTEM BOOT
+         ========================================== -->
+    <div id="screen-boot" class="screen-container">
+        <div id="boot-box" class="glass-box">
+            <h2 id="boot-title" class="text-cyan"><i class="fa-solid fa-shield-halved"></i> HANDSHAKE ESTABLISHED</h2>
+            <div class="progress-track"><div id="boot-progress"></div></div>
+            <div id="boot-logs"></div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         SCREEN 3: MASTER WORKSPACE
+         ========================================== -->
+    <div id="screen-workspace" class="screen-container">
+        <div id="workspace-layout">
+            
+            <!-- Dynamic Sidebar -->
             <div class="sidebar">
-                <div class="nav-item active" onclick="SystemApp.switchTab('tab-dashboard', this)"><i class="fa-solid fa-chart-line"></i> Global Dashboard</div>
-                <div class="nav-item" onclick="SystemApp.switchTab('tab-inject', this)"><i class="fa-solid fa-database"></i> Payload Injection</div>
-                <div class="nav-item" onclick="SystemApp.switchTab('tab-records', this)"><i class="fa-solid fa-table-list"></i> Live Databanks</div>
-                <div class="nav-item" onclick="SystemApp.switchTab('tab-users', this)"><i class="fa-solid fa-users-gear"></i> Identity Directory</div>
+                <div class="brand">
+                    <h3 class="text-cyan" style="margin:0;"><i class="fa-solid fa-server"></i> OSINT CORE</h3>
+                    <div id="sidebar-user" style="color:var(--text-dim); font-size:12px; margin-top:5px; font-family:var(--font-mono);"></div>
+                </div>
+                
+                <!-- Shared Nav -->
+                <div class="nav-item active" onclick="AppCore.switchView('view-terminal', this)"><i class="fa-solid fa-terminal"></i> Global Search</div>
+                
+                <!-- Admin Only Nav (Injected by JS if Admin) -->
+                <div id="admin-nav" style="display: none; flex-direction: column;">
+                    <div class="nav-item" onclick="AppCore.switchView('view-databanks', this)"><i class="fa-solid fa-database"></i> Core Databanks</div>
+                    <div class="nav-item" onclick="AppCore.switchView('view-directory', this)"><i class="fa-solid fa-users-gear"></i> Identity Directory</div>
+                    <div class="nav-item" onclick="AppCore.switchView('view-audit', this)"><i class="fa-solid fa-list-check"></i> System Audit Logs</div>
+                </div>
+
+                <div style="flex-grow:1;"></div>
+                <button class="outline" onclick="AppCore.logout()"><i class="fa-solid fa-power-off"></i> Terminate Session</button>
             </div>
 
-            <!-- Content Area -->
+            <!-- Main Content Container -->
             <div class="main-content">
                 
-                <!-- TAB 1: DASHBOARD -->
-                <div id="tab-dashboard" class="content-section active">
-                    <h3 class="text-cyan" style="text-align:left;">System Overview</h3>
-                    <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px;">
-                        <div style="background:rgba(0,0,0,0.4); padding:20px; border-radius:8px; border-left:4px solid var(--accent-cyan);">
-                            <div style="color:var(--text-dim); font-size:12px; text-transform:uppercase;">Total Encrypted Records</div>
-                            <div id="stat-records" style="font-size:32px; font-weight:bold; color:white; margin-top:10px;">0</div>
+                <!-- VIEW 1: TERMINAL & INJECT (Unified split view) -->
+                <div id="view-terminal" class="view-section active">
+                    <div class="split-workspace">
+                        
+                        <!-- Left: Terminal (Always visible) -->
+                        <div class="terminal-wrapper">
+                            <div class="term-header">
+                                <span>OSINT QUERY TERMINAL V9.0</span>
+                                <span id="term-status" style="color:var(--text-main);">STATUS: LINKED</span>
+                            </div>
+                            <div class="term-body" id="term-output"></div>
+                            <div class="term-input-area">
+                                <span class="term-prompt">root@osint:~#</span>
+                                <input type="text" id="cmd-input" placeholder="Type 'help' for commands and press Enter..." autocomplete="off">
+                            </div>
                         </div>
-                        <div style="background:rgba(0,0,0,0.4); padding:20px; border-radius:8px; border-left:4px solid var(--accent-green);">
-                            <div style="color:var(--text-dim); font-size:12px; text-transform:uppercase;">Active Operators</div>
-                            <div id="stat-users" style="font-size:32px; font-weight:bold; color:white; margin-top:10px;">0</div>
-                        </div>
-                        <div style="background:rgba(0,0,0,0.4); padding:20px; border-radius:8px; border-left:4px solid var(--accent-yellow);">
-                            <div style="color:var(--text-dim); font-size:12px; text-transform:uppercase;">System Integrity</div>
-                            <div style="font-size:32px; font-weight:bold; color:white; margin-top:10px;">100%</div>
+
+                        <!-- Right: Data Injector (Only visible to Admin) -->
+                        <div class="inject-wrapper" id="inject-panel">
+                            <h4 class="text-cyan" style="margin-top:0; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px;"><i class="fa-solid fa-pen-to-square"></i> Payload Injection</h4>
+                            <div class="input-group"><i class="fa-solid fa-fingerprint"></i><input type="text" id="inj-id" placeholder="Target ID (Required)"></div>
+                            <div class="input-group"><i class="fa-solid fa-user"></i><input type="text" id="inj-name" placeholder="Full Name"></div>
+                            <div class="input-group"><i class="fa-solid fa-map-pin"></i><input type="text" id="inj-address" placeholder="Address"></div>
+                            <div class="input-group"><i class="fa-solid fa-id-card"></i><input type="text" id="inj-cnic" placeholder="CNIC Number"></div>
+                            <div class="input-group"><i class="fa-solid fa-phone"></i><input type="text" id="inj-mobile" placeholder="Mobile Node"></div>
+                            <div class="input-group">
+                                <i class="fa-solid fa-tower-cell"></i>
+                                <select id="inj-network">
+                                    <option value="" disabled selected>Carrier Network...</option>
+                                    <option value="Jazz">Jazz</option>
+                                    <option value="Zong">Zong</option>
+                                    <option value="Telenor">Telenor</option>
+                                    <option value="Ufone">Ufone</option>
+                                    <option value="SCOM">SCOM</option>
+                                </select>
+                            </div>
+                            <div class="input-group"><i class="fa-solid fa-link"></i><input type="text" id="inj-other" placeholder="Alternate Connection"></div>
+                            <div class="input-group"><i class="fa-solid fa-file-code"></i><input type="text" id="inj-payload" placeholder="Encrypted Notes"></div>
+                            
+                            <button onclick="AppCore.injectPayload()" id="btn-inject" style="margin-top:auto;"><i class="fa-solid fa-upload"></i> Commit to Matrix <span id="spin-inject" class="spinner" style="display:none;"></span></button>
                         </div>
                     </div>
                 </div>
 
-                <!-- TAB 2: DATA INJECTION -->
-                <div id="tab-inject" class="content-section">
-                    <h3 class="text-cyan" style="text-align:left;">Target Data Injection Portal</h3>
-                    <div class="form-grid">
-                        <div class="input-group"><i class="fa-solid fa-fingerprint"></i><input type="text" id="inj-id" placeholder="Primary Target ID (@username/phone)"></div>
-                        <div class="input-group"><i class="fa-solid fa-user-tag"></i><input type="text" id="inj-name" placeholder="Full Legal Name"></div>
-                        <div class="input-group full-width"><i class="fa-solid fa-map-location-dot"></i><input type="text" id="inj-address" placeholder="Geographic Address / Coordinates"></div>
-                        <div class="input-group"><i class="fa-solid fa-id-card"></i><input type="text" id="inj-cnic" placeholder="National ID (CNIC)"></div>
-                        <div class="input-group"><i class="fa-solid fa-mobile-screen"></i><input type="text" id="inj-mobile" placeholder="Primary Mobile Node"></div>
-                        <div class="input-group">
-                            <i class="fa-solid fa-tower-cell"></i>
-                            <select id="inj-network">
-                                <option value="" disabled selected>Select Carrier Network...</option>
-                                <option value="Jazz">Jazz / Mobilink</option>
-                                <option value="Zong">Zong / CMPak</option>
-                                <option value="Telenor">Telenor Pakistan</option>
-                                <option value="Ufone">Ufone</option>
-                                <option value="SCOM">SCOM</option>
-                            </select>
+                <!-- VIEW 2: DATABANKS (Admin Only) -->
+                <div id="view-databanks" class="view-section">
+                    <h3 class="text-cyan"><i class="fa-solid fa-database"></i> Live Encrypted Databanks</h3>
+                    <div class="table-box">
+                        <div style="text-align: right; margin-bottom: 15px;">
+                            <button onclick="AppCore.purgeRecords()" class="danger" style="width:auto; padding:10px 20px; font-size:12px;"><i class="fa-solid fa-skull"></i> PURGE ALL</button>
                         </div>
-                        <div class="input-group"><i class="fa-solid fa-phone"></i><input type="text" id="inj-other" placeholder="Secondary Contact Trace"></div>
-                        <div class="input-group full-width"><i class="fa-solid fa-code"></i><input type="text" id="inj-payload" placeholder="Additional Encrypted Notes / Data Payload"></div>
+                        <div style="max-height: 60vh; overflow-y: auto;">
+                            <table id="tbl-records">
+                                <thead><tr><th>Target ID</th><th>Name / Node</th><th>Carrier</th><th>Last Updated</th><th>Actions</th></tr></thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
                     </div>
-                    <button id="btn-inject" onclick="SystemApp.injectRecord()" style="margin-top:20px; width:250px; float:right;">
-                        <i class="fa-solid fa-cloud-arrow-up"></i> Commit Payload <span id="spin-inject" class="spinner" style="display:none;"></span>
-                    </button>
                 </div>
 
-                <!-- TAB 3: LIVE DATABANKS -->
-                <div id="tab-records" class="content-section">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                        <h3 class="text-cyan" style="text-align:left; margin:0;">Live Encrypted Databanks</h3>
-                        <button onclick="SystemApp.purgeAllRecords()" style="width:auto; padding:8px 15px; font-size:12px; border-color:var(--accent-red); color:var(--accent-red); background:transparent;"><i class="fa-solid fa-triangle-exclamation"></i> Purge Matrix</button>
+                <!-- VIEW 3: DIRECTORY (Admin Only) -->
+                <div id="view-directory" class="view-section">
+                    <h3 class="text-cyan"><i class="fa-solid fa-users-gear"></i> System Operators</h3>
+                    <div style="display: flex; gap: 30px;">
+                        <!-- Create User Form -->
+                        <div class="table-box" style="width: 350px; height: fit-content;">
+                            <h4 style="margin-top:0;">Provision Access</h4>
+                            <input type="hidden" id="usr-id">
+                            <div class="input-group"><i class="fa-solid fa-user"></i><input type="text" id="usr-name" placeholder="Operator Name"></div>
+                            <div class="input-group"><i class="fa-solid fa-key"></i><input type="text" id="usr-pass" placeholder="Passkey"></div>
+                            <div class="input-group">
+                                <i class="fa-solid fa-shield"></i>
+                                <select id="usr-role">
+                                    <option value="User">Standard Terminal User</option>
+                                    <option value="Admin">Master Console Admin</option>
+                                </select>
+                            </div>
+                            <button onclick="AppCore.saveUser()"><i class="fa-solid fa-check"></i> Authorize</button>
+                        </div>
+                        <!-- Users Table -->
+                        <div class="table-box" style="flex-grow: 1; max-height: 70vh; overflow-y: auto;">
+                            <table id="tbl-users">
+                                <thead><tr><th>Identity</th><th>Clearance</th><th>Status</th><th>Actions</th></tr></thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
                     </div>
-                    <div style="overflow-x:auto;">
-                        <table class="data-table" id="table-records">
-                            <thead><tr><th>Target ID</th><th>Name</th><th>Mobile</th><th>Network</th><th>Updated</th><th>Actions</th></tr></thead>
-                            <tbody><!-- Dynamic Injection --></tbody>
+                </div>
+
+                <!-- VIEW 4: AUDIT LOGS (Admin Only) -->
+                <div id="view-audit" class="view-section">
+                    <h3 class="text-cyan"><i class="fa-solid fa-list-check"></i> System Audit Trail</h3>
+                    <div class="table-box" style="max-height: 75vh; overflow-y: auto;">
+                        <table id="tbl-audit">
+                            <thead><tr><th>Timestamp</th><th>Operator</th><th>Action Class</th><th>Details Payload</th></tr></thead>
+                            <tbody></tbody>
                         </table>
                     </div>
                 </div>
 
-                <!-- TAB 4: USER DIRECTORY -->
-                <div id="tab-users" class="content-section">
-                    <h3 class="text-cyan" style="text-align:left;">Identity & Access Control</h3>
-                    <div style="background:rgba(0,0,0,0.3); padding:20px; border-radius:8px; border:1px solid rgba(255,255,255,0.1); margin-bottom:20px;">
-                        <h4 style="margin-bottom:15px; color:var(--text-dim); font-size:12px;">PROVISION NEW OPERATOR / EDIT</h4>
-                        <input type="hidden" id="usr-id">
-                        <div class="form-grid">
-                            <div class="input-group"><i class="fa-solid fa-user-shield"></i><input type="text" id="usr-name" placeholder="Operator Identity (Username)"></div>
-                            <div class="input-group"><i class="fa-solid fa-key"></i><input type="text" id="usr-pass" placeholder="Assign Secure Passkey"></div>
-                            <div class="input-group">
-                                <i class="fa-solid fa-scale-balanced"></i>
-                                <select id="usr-role">
-                                    <option value="Admin">Admin (Full Console Access)</option>
-                                    <option value="Terminal">Terminal (Query Only Access)</option>
-                                </select>
-                            </div>
-                        </div>
-                        <button id="btn-usr" onclick="SystemApp.saveUser()" style="margin-top:15px; width:200px;"><i class="fa-solid fa-user-plus"></i> Commit Identity</button>
-                    </div>
-                    <table class="data-table" id="table-users">
-                        <thead><tr><th>Operator</th><th>Passkey</th><th>Clearance Level</th><th>Status</th><th>Actions</th></tr></thead>
-                        <tbody><!-- Dynamic Injection --></tbody>
-                    </table>
-                </div>
-
             </div>
         </div>
     </div>
 
     <!-- ==========================================
-         MODULE 4: TERMINAL QUERY INTERFACE
-         ========================================== -->
-    <div id="terminal-container" class="glass-panel">
-        <div class="term-header">
-            <h3 style="margin:0; color:var(--accent-green); text-shadow:0 0 10px rgba(0,255,65,0.5);"><i class="fa-solid fa-terminal"></i> OSINT TERMINAL V8.0</h3>
-            <button onclick="SystemApp.logout()" style="width:auto; padding:6px 15px; font-size:11px; border-color:var(--accent-red); color:var(--accent-red); background:transparent;"><i class="fa-solid fa-power-off"></i> Logout</button>
-        </div>
-        <div class="term-body" id="term-output"></div>
-        <div class="term-input-line">
-            <span class="term-prompt">root@osint-core:~#</span>
-            <input type="text" id="term-input" class="term-input" placeholder="Type 'help' for commands..." autocomplete="off">
-        </div>
-    </div>
-
-    <!-- ==========================================
-         ENTERPRISE JAVASCRIPT ARCHITECTURE
+         ENTERPRISE JAVASCRIPT LOGIC
          ========================================== -->
     <script>
-        // --- 1. CORE SYSTEM CONFIGURATION ---
+        // 1. SUPABASE CONNECTION [CITED DATA]
         const CONFIG = {
-            DB_URL: 'https://adqiprobgmyzsxrwrjdo.supabase.co',
-            DB_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkcWlwcm9iZ215enN4cndyamRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4ODc5NDYsImV4cCI6MjA5ODQ2Mzk0Nn0.G8gEWElZs6eftJ4sRWCDx6fhyEX_icutmIPMWcQnefQ'
+            URL: 'https://adqiprobgmyzsxrwrjdo.supabase.co',
+            KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkcWlwcm9iZ215enN4cndyamRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4ODc5NDYsImV4cCI6MjA5ODQ2Mzk0Nn0.G8gEWElZs6eftJ4sRWCDx6fhyEX_icutmIPMWcQnefQ'
         };
+        const supabase = window.supabase.createClient(CONFIG.URL, CONFIG.KEY);
 
-        const supabase = window.supabase.createClient(CONFIG.DB_URL, CONFIG.DB_KEY);
-
-        // --- 2. ENTERPRISE TOAST NOTIFICATION ENGINE ---
+        // 2. TOAST ENGINE
         const Toast = {
             show: (msg, type = 'info') => {
-                const container = document.getElementById('toast-container');
-                const toast = document.createElement('div');
-                toast.className = `toast ${type}`;
-                let icon = 'fa-circle-info';
-                if(type==='success') icon = 'fa-circle-check';
-                if(type==='error') icon = 'fa-triangle-exclamation';
-                
-                toast.innerHTML = `<i class="fa-solid ${icon}"></i> <div>${msg}</div>`;
-                container.appendChild(toast);
-                
-                setTimeout(() => {
-                    toast.style.animation = 'fadeOut 0.3s forwards';
-                    setTimeout(() => toast.remove(), 300);
-                }, 4000);
+                const box = document.getElementById('toast-box');
+                const t = document.createElement('div');
+                t.className = `toast ${type}`;
+                let icon = type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-triangle' : 'fa-info-circle';
+                t.innerHTML = `<i class="fa-solid ${icon}"></i> <div>${msg}</div>`;
+                box.appendChild(t);
+                setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 4000);
             }
         };
 
-        // --- 3. BACKGROUND PARTICLE ENGINE ---
-        const Particles = {
-            init: () => {
-                const cvs = document.getElementById('bg-canvas');
-                const ctx = cvs.getContext('2d');
-                cvs.width = window.innerWidth; cvs.height = window.innerHeight;
-                let particles = [];
-                for(let i=0; i<100; i++) {
-                    particles.push({
-                        x: Math.random() * cvs.width, y: Math.random() * cvs.height,
-                        vx: (Math.random()-0.5)*0.5, vy: (Math.random()-0.5)*0.5,
-                        size: Math.random()*2
-                    });
-                }
-                function animate() {
-                    ctx.clearRect(0,0,cvs.width,cvs.height);
-                    ctx.fillStyle = 'rgba(0, 243, 255, 0.5)';
-                    particles.forEach(p => {
-                        p.x += p.vx; p.y += p.vy;
-                        if(p.x < 0 || p.x > cvs.width) p.vx *= -1;
-                        if(p.y < 0 || p.y > cvs.height) p.vy *= -1;
-                        ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
-                    });
-                    requestAnimationFrame(animate);
-                }
-                animate();
-            }
-        };
+        // 3. MASTER APPLICATION CONTROLLER
+        const AppCore = {
+            user: null,
 
-        // --- 4. MASTER APPLICATION CONTROLLER ---
-        const SystemApp = {
-            currentUser: null,
+            // A. Screen Management
+            showScreen: (id) => {
+                document.querySelectorAll('.screen-container').forEach(s => s.classList.remove('active'));
+                document.getElementById(id).classList.add('active');
+            },
 
-            // A. Authentication Module with Emergency Offline Bypass
+            switchView: (id, el) => {
+                document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
+                document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+                document.getElementById(id).classList.add('active');
+                if(el) el.classList.add('active');
+
+                if(id === 'view-databanks') AppCore.loadDatabanks();
+                if(id === 'view-directory') AppCore.loadDirectory();
+                if(id === 'view-audit') AppCore.loadAudit();
+            },
+
+            // B. Authentication & Emergency Bypass
             authenticate: async () => {
-                const user = document.getElementById('login-user').value.trim();
-                const pass = document.getElementById('login-pass').value.trim();
+                const u = document.getElementById('login-user').value.trim();
+                const p = document.getElementById('login-pass').value.trim();
                 const btn = document.getElementById('btn-login');
-                const spin = document.getElementById('login-spin');
-                
-                if(!user || !pass) { Toast.show('Credentials required for access.', 'error'); return; }
+                const spin = document.getElementById('spin-login');
+
+                if(!u || !p) return Toast.show('Operator ID and Passkey required.', 'error');
 
                 btn.disabled = true; spin.style.display = 'inline-block';
 
                 try {
-                    // EMERGENCY BYPASS: If DB connection is broken or table empty, force login for admin/admin
-                    let authSuccess = false;
                     let role = 'User';
+                    const { data, error } = await supabase.from('system_users').select('*').eq('username', u).eq('password', p);
 
-                    const { data, error } = await supabase.from('system_users').select('*').eq('username', user).eq('password', pass);
-                    
                     if (error || !data || data.length === 0) {
-                        // Fallback logic check
-                        if(user === 'admin' && pass === 'admin') {
-                            console.warn(">> ENGAGING EMERGENCY ADMIN BYPASS <<");
-                            authSuccess = true; role = 'Admin';
-                        } else if (user === 'user' && pass === 'user') {
-                            authSuccess = true; role = 'Terminal';
+                        // EMERGENCY FAILSAFE IF DB EMPTY OR CONNECTION BLOCKED
+                        if (u === 'admin' && p === 'admin') {
+                            console.warn("OFFLINE OVERRIDE: Admin Access Granted");
+                            role = 'Admin';
+                        } else if (u === 'user' && p === 'user') {
+                            role = 'User';
                         } else {
-                            throw new Error("Invalid credentials mapped in directory.");
+                            throw new Error('Unverified credentials. Access blocked.');
                         }
                     } else {
-                        const acc = data[0];
-                        if(acc.status === 'Suspended') throw new Error("Account suspended by System Administrator.");
-                        authSuccess = true; role = acc.role;
+                        if(data[0].status === 'Suspended') throw new Error('Operator clearance revoked.');
+                        role = data[0].role;
                     }
 
-                    if(authSuccess) {
-                        SystemApp.currentUser = { username: user, role: role };
-                        Toast.show(`Authentication Verified. Welcome ${user}.`, 'success');
-                        SystemApp.triggerBootSequence(role);
-                    }
-                } catch(err) {
-                    Toast.show(err.message, 'error');
-                } finally {
+                    AppCore.user = { username: u, role: role };
+                    await AppCore.logAudit('LOGIN_SUCCESS', `Operator logged in via UI.`);
+                    AppCore.triggerBoot();
+
+                } catch(e) {
+                    Toast.show(e.message, 'error');
                     btn.disabled = false; spin.style.display = 'none';
                 }
             },
 
-            triggerBootSequence: (role) => {
-                document.getElementById('login-container').style.display = 'none';
-                document.getElementById('boot-screen').style.display = 'block';
-                
-                const title = document.getElementById('boot-title');
-                title.innerText = role === 'Admin' ? 'ADMINISTRATOR OVERRIDE' : 'TERMINAL ACCESS GRANTED';
-                title.className = role === 'Admin' ? 'text-cyan' : 'text-green';
-                
+            // C. Boot Sequence
+            triggerBoot: () => {
+                AppCore.showScreen('screen-boot');
                 const bar = document.getElementById('boot-progress');
-                bar.style.background = role === 'Admin' ? 'var(--accent-cyan)' : 'var(--accent-green)';
+                const logs = document.getElementById('boot-logs');
+                const title = document.getElementById('boot-title');
+                
+                title.className = AppCore.user.role === 'Admin' ? 'text-cyan' : 'text-green';
+                bar.style.background = AppCore.user.role === 'Admin' ? 'var(--cyan-glow)' : 'var(--green-glow)';
                 bar.style.boxShadow = `0 0 10px ${bar.style.background}`;
                 
-                const logs = document.getElementById('boot-logs');
-                logs.innerHTML = ''; bar.style.width = '0%';
-
-                const steps = [
-                    "Bypassing external perimeter firewalls...",
-                    "Establishing P2P link with Supabase Mainframe...",
-                    "Decrypting RSA-4096 shadow keys...",
-                    "Loading dynamic UI matrices...",
-                    "Syncing live databanks..."
+                logs.innerHTML = '';
+                const messages = [
+                    "Bypassing Subnet Alpha...", "Decrypting 4096-bit Handshake...", 
+                    "Mounting Supabase API Tunnels...", "Constructing Visual Workspace..."
                 ];
 
-                let p = 0, s = 0;
-                const iBar = setInterval(() => { p += 2; bar.style.width = p+'%'; if(p>=100) clearInterval(iBar); }, 25);
-                const iLog = setInterval(() => {
-                    if(s < steps.length) { logs.innerHTML += `<div>[SYSTEM] ${steps[s]}</div>`; s++; }
+                let progress = 0, step = 0;
+                const pInt = setInterval(() => { progress += 2.5; bar.style.width = progress + '%'; if(progress >= 100) clearInterval(pInt); }, 30);
+                const lInt = setInterval(() => {
+                    if(step < messages.length) { logs.innerHTML += `<div>[SYSTEM] ${messages[step]}</div>`; step++; }
                     else {
-                        clearInterval(iLog);
-                        setTimeout(() => {
-                            document.getElementById('boot-screen').style.display = 'none';
-                            if(role === 'Admin') SystemApp.initAdmin();
-                            else SystemApp.initTerminal();
-                        }, 500);
+                        clearInterval(lInt);
+                        setTimeout(() => AppCore.buildWorkspace(), 500);
                     }
-                }, 250);
+                }, 300);
             },
 
-            // B. Admin UI Routing
-            switchTab: (tabId, element) => {
-                document.querySelectorAll('.content-section').forEach(el => el.classList.remove('active'));
-                document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-                document.getElementById(tabId).classList.add('active');
-                element.classList.add('active');
+            // D. Workspace Construction based on Role (Solves the Prompt's Requirement)
+            buildWorkspace: () => {
+                AppCore.showScreen('screen-workspace');
+                document.getElementById('sidebar-user').innerHTML = `OPERATOR: <span style="color:white;">${AppCore.user.username}</span><br>CLEARANCE: <span style="color:${AppCore.user.role==='Admin'?'var(--cyan-glow)':'var(--green-glow)'};">${AppCore.user.role}</span>`;
+                
+                const adminNav = document.getElementById('admin-nav');
+                const injectPanel = document.getElementById('inject-panel');
 
-                if(tabId === 'tab-records') SystemApp.loadRecords();
-                if(tabId === 'tab-users') SystemApp.loadUsers();
-                if(tabId === 'tab-dashboard') SystemApp.loadStats();
+                if(AppCore.user.role === 'Admin') {
+                    // Show Admin Tabs and Inject Panel next to Terminal
+                    adminNav.style.display = 'flex';
+                    injectPanel.classList.add('visible');
+                    AppCore.termPrint("SYSTEM ADMIN TERMINAL ONLINE.\nINJECTION PANEL LINKED TO MATRIX.\nTYPE 'help' FOR COMMANDS.\n");
+                } else {
+                    // Hide Admin features entirely. Terminal gets full width.
+                    adminNav.style.display = 'none';
+                    injectPanel.classList.remove('visible');
+                    AppCore.termPrint("OSINT QUERY TERMINAL ONLINE.\nTYPE 'help' FOR COMMANDS.\n");
+                }
+
+                document.getElementById('cmd-input').focus();
             },
 
-            initAdmin: () => {
-                document.getElementById('admin-container').style.display = 'flex';
-                SystemApp.loadStats();
+            // E. Terminal Engine
+            termPrint: (txt) => {
+                const out = document.getElementById('term-output');
+                out.innerHTML += txt;
+                out.scrollTop = out.scrollHeight;
             },
 
-            loadStats: async () => {
+            handleCmd: async (e) => {
+                if(e.key === 'Enter') {
+                    const input = document.getElementById('cmd-input');
+                    const cmd = input.value.trim();
+                    input.value = '';
+                    if(!cmd) return;
+
+                    AppCore.termPrint(`<br><span style="color:white;">root@osint:~#</span> ${cmd}\n`);
+                    const args = cmd.split(' ');
+                    const main = args[0].toLowerCase();
+
+                    if(main === 'help') {
+                        AppCore.termPrint(`
+DIRECTIVES:
+  <span style="color:var(--cyan-glow);">scan [id]</span>   - Query the live databank matrix.
+  <span style="color:var(--cyan-glow);">clear</span>       - Purge visual output.
+  <span style="color:var(--cyan-glow);">logout</span>      - Terminate connection securely.
+`);
+                    } else if (main === 'clear') {
+                        document.getElementById('term-output').innerHTML = '';
+                    } else if (main === 'logout') {
+                        AppCore.logout();
+                    } else if (main === 'scan') {
+                        if(args.length < 2) AppCore.termPrint("> ERR: TARGET ID REQUIRED.\n");
+                        else await AppCore.executeScan(args[1]);
+                    } else {
+                        AppCore.termPrint(`> ERR: DIRECTIVE '${main}' NOT RECOGNIZED.\n`);
+                    }
+                }
+            },
+
+            executeScan: async (target) => {
+                AppCore.termPrint(`> ESTABLISHING CLOUD UPLINK TO LOCATE [${target}]...\n`);
+                await new Promise(r => setTimeout(r, 1000));
+
                 try {
-                    const rec = await supabase.from('osint_records').select('target_id', { count: 'exact' });
-                    const usr = await supabase.from('system_users').select('id', { count: 'exact' });
-                    document.getElementById('stat-records').innerText = rec.count || 0;
-                    document.getElementById('stat-users').innerText = usr.count || 0;
-                } catch(e) {}
+                    const clean = target.replace('@', '');
+                    const { data, error } = await supabase.from('osint_records').select('*')
+                        .or(`target_id.ilike.%${clean}%,mobile.eq.${clean}`).limit(1);
+
+                    if(error || !data || data.length === 0) {
+                        AppCore.termPrint(`> <span style="color:var(--red-glow);">ERR 404: NO TRACE FOUND IN MATRIX.</span>\n`);
+                    } else {
+                        const r = data[0];
+                        AppCore.termPrint(`
+<span style="color:var(--cyan-glow);">+======================================================+
+| TARGET ACQUIRED (ENCRYPTED DB RECORD)                |
++======================================================+</span>
+  ID       : ${r.target_id}
+  NAME     : ${r.name}
+  ADDRESS  : ${r.address}
+  CNIC     : ${r.cnic}
+  MOBILE   : ${r.mobile} [${r.network}]
+  ALT NUM  : ${r.other_number}
+  NOTES    : ${r.data_payload}
+<span style="color:var(--cyan-glow);">+======================================================+</span>
+`);
+                        await AppCore.logAudit('TERMINAL_SCAN', `Traced target: ${target}`);
+                    }
+                } catch(e) { AppCore.termPrint(`> <span style="color:var(--red-glow);">NETWORK FAULT: ${e.message}</span>\n`); }
             },
 
-            // C. Data Payload Injection (CRUD)
-            injectRecord: async () => {
+            // F. Data Injection (Admin Only)
+            injectPayload: async () => {
                 const id = document.getElementById('inj-id').value.trim();
-                if(!id) { Toast.show("Target ID is strictly required.", "error"); return; }
+                if(!id) return Toast.show("Target ID is critical.", "error");
+
+                const btn = document.getElementById('btn-inject');
+                const spin = document.getElementById('spin-inject');
+                btn.disabled = true; spin.style.display = 'inline-block';
 
                 const payload = {
                     target_id: id,
@@ -484,60 +529,46 @@
                     other_number: document.getElementById('inj-other').value || "NONE",
                     data_payload: document.getElementById('inj-payload').value || "NO_ADDITIONAL_DATA",
                     last_updated: new Date().toISOString(),
-                    updated_by: SystemApp.currentUser.username
+                    updated_by: AppCore.user.username
                 };
-
-                const btn = document.getElementById('btn-inject');
-                const spin = document.getElementById('spin-inject');
-                btn.disabled = true; spin.style.display = 'inline-block';
 
                 try {
                     const { error } = await supabase.from('osint_records').upsert(payload);
                     if(error) throw error;
-                    Toast.show(`Payload injected successfully for Target [${id}]`, 'success');
+                    Toast.show(`Payload [${id}] injected.`, 'success');
+                    await AppCore.logAudit('INJECT_DATA', `Modified record: ${id}`);
                     
-                    // Reset Form
-                    document.querySelectorAll('#tab-inject input').forEach(el => el.value = '');
+                    // Reset fields
+                    document.querySelectorAll('#inject-panel input').forEach(i => i.value = '');
                     document.getElementById('inj-network').selectedIndex = 0;
-                    
-                    // Log Action
-                    await supabase.from('audit_logs').insert([{ action: 'INJECT_RECORD', details: id, performed_by: SystemApp.currentUser.username }]);
-                } catch(err) {
-                    Toast.show(`DB Error: ${err.message}`, 'error');
-                } finally {
-                    btn.disabled = false; spin.style.display = 'none';
-                    btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Commit Payload <span id="spin-inject" class="spinner" style="display:none;"></span>';
-                    btn.style.borderColor = 'rgba(255,255,255,0.2)'; btn.style.color = 'white';
-                }
+                } catch(e) { Toast.show(e.message, 'error'); } 
+                finally { btn.disabled = false; spin.style.display = 'none'; }
             },
 
-            loadRecords: async () => {
-                const tbody = document.querySelector('#table-records tbody');
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;"><span class="spinner" style="border-top-color:var(--accent-cyan); display:inline-block;"></span> Fetching Live Data...</td></tr>';
-                
+            // G. View: Databanks
+            loadDatabanks: async () => {
+                const tbody = document.querySelector('#tbl-records tbody');
+                tbody.innerHTML = '<tr><td colspan="5">Syncing Cloud Matrix...</td></tr>';
                 try {
-                    const { data, error } = await supabase.from('osint_records').select('*').order('last_updated', { ascending: false });
-                    if(error) throw error;
-                    
-                    if(data.length === 0) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-dim);">No records exist in databank.</td></tr>'; return; }
-
+                    const { data } = await supabase.from('osint_records').select('*').order('last_updated', { ascending: false });
                     tbody.innerHTML = '';
+                    if(!data || data.length === 0) return tbody.innerHTML = '<tr><td colspan="5">No records in databank.</td></tr>';
+                    
                     data.forEach(r => {
                         tbody.innerHTML += `
                             <tr>
-                                <td style="color:var(--accent-cyan); font-weight:bold;">${r.target_id}</td>
-                                <td>${r.name}</td>
-                                <td>${r.mobile}</td>
+                                <td style="color:var(--cyan-glow); font-weight:bold;">${r.target_id}</td>
+                                <td>${r.name}<br><span style="color:var(--text-dim); font-size:11px;">${r.mobile}</span></td>
                                 <td>${r.network}</td>
-                                <td style="color:var(--text-dim);">${new Date(r.last_updated).toLocaleDateString()}</td>
+                                <td>${new Date(r.last_updated).toLocaleDateString()}</td>
                                 <td>
-                                    <button class="action-btn btn-edit" onclick="SystemApp.editRecord('${r.target_id}')"><i class="fa-solid fa-pen"></i></button>
-                                    <button class="action-btn btn-del" onclick="SystemApp.delRecord('${r.target_id}')"><i class="fa-solid fa-trash"></i></button>
+                                    <button class="outline" style="width:auto; padding:5px 10px; font-size:11px;" onclick="AppCore.editRecord('${r.target_id}')">EDIT</button>
+                                    <button class="danger" style="width:auto; padding:5px 10px; font-size:11px;" onclick="AppCore.delRecord('${r.target_id}')">DEL</button>
                                 </td>
                             </tr>
                         `;
                     });
-                } catch(err) { Toast.show(err.message, 'error'); }
+                } catch(e) {}
             },
 
             editRecord: async (id) => {
@@ -545,7 +576,9 @@
                     const { data } = await supabase.from('osint_records').select('*').eq('target_id', id).single();
                     if(!data) return;
                     
-                    SystemApp.switchTab('tab-inject', document.querySelectorAll('.nav-item')[1]);
+                    // Jump to Terminal/Inject view
+                    AppCore.switchView('view-terminal', document.querySelectorAll('.nav-item')[0]);
+                    
                     document.getElementById('inj-id').value = data.target_id;
                     document.getElementById('inj-name').value = data.name;
                     document.getElementById('inj-address').value = data.address;
@@ -554,52 +587,42 @@
                     document.getElementById('inj-network').value = data.network;
                     document.getElementById('inj-other').value = data.other_number;
                     document.getElementById('inj-payload').value = data.data_payload;
-
-                    const btn = document.getElementById('btn-inject');
-                    btn.innerHTML = '<i class="fa-solid fa-pen-nib"></i> Update Payload <span id="spin-inject" class="spinner" style="display:none;"></span>';
-                    btn.style.borderColor = 'var(--accent-yellow)'; btn.style.color = 'var(--accent-yellow)';
-                    Toast.show(`Loaded ${id} for modification.`, 'info');
+                    Toast.show(`Target ${id} loaded to Injector.`, 'info');
                 } catch(e) {}
             },
 
             delRecord: async (id) => {
-                if(confirm(`CRITICAL: Irreversibly delete record [${id}]?`)) {
+                if(confirm(`Erase target ${id} from global databank?`)) {
                     await supabase.from('osint_records').delete().eq('target_id', id);
-                    await supabase.from('audit_logs').insert([{ action: 'DELETE_RECORD', details: id, performed_by: SystemApp.currentUser.username }]);
-                    Toast.show(`Record ${id} purged.`, 'success');
-                    SystemApp.loadRecords();
+                    await AppCore.logAudit('DELETE_DATA', `Erased record: ${id}`);
+                    AppCore.loadDatabanks();
                 }
             },
 
-            purgeAllRecords: async () => {
-                const conf = prompt("TYPE 'PURGE' TO CONFIRM COMPLETE DATABANK WIPEOUT.");
-                if(conf === 'PURGE') {
-                    await supabase.from('osint_records').delete().neq('target_id', 'IMPOSSIBLE_STRING');
-                    await supabase.from('audit_logs').insert([{ action: 'MASS_PURGE', details: 'All records deleted', performed_by: SystemApp.currentUser.username }]);
-                    Toast.show("Complete Matrix Purged.", "error");
-                    SystemApp.loadRecords();
+            purgeRecords: async () => {
+                if(prompt("TYPE 'PURGE' TO DESTROY ALL DATA.") === 'PURGE') {
+                    await supabase.from('osint_records').delete().neq('target_id', 'LOCK');
+                    await AppCore.logAudit('MASS_PURGE', `Executed global databank wipe.`);
+                    AppCore.loadDatabanks();
                 }
             },
 
-            // D. User Directory Management
-            loadUsers: async () => {
-                const tbody = document.querySelector('#table-users tbody');
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Loading Directory...</td></tr>';
+            // H. View: Directory
+            loadDirectory: async () => {
+                const tbody = document.querySelector('#tbl-users tbody');
                 try {
                     const { data } = await supabase.from('system_users').select('*').order('created_at', { ascending: true });
                     tbody.innerHTML = '';
-                    if(!data) return;
                     data.forEach(u => {
-                        let badgeColor = u.role === 'Admin' ? 'var(--accent-cyan)' : 'var(--accent-yellow)';
+                        const bClass = u.role === 'Admin' ? 'badge admin' : 'badge user';
                         tbody.innerHTML += `
                             <tr>
                                 <td style="font-weight:bold;">${u.username}</td>
-                                <td style="color:var(--text-dim); font-family:var(--font-mono);">[ENCRYPTED]</td>
-                                <td><span style="color:${badgeColor}; border:1px solid ${badgeColor}; padding:2px 6px; border-radius:4px; font-size:10px;">${u.role}</span></td>
+                                <td><span class="${bClass}">${u.role}</span></td>
                                 <td>${u.status}</td>
                                 <td>
-                                    <button class="action-btn btn-edit" onclick="SystemApp.editUser('${u.id}', '${u.username}', '${u.password}', '${u.role}')"><i class="fa-solid fa-pen"></i></button>
-                                    <button class="action-btn btn-del" onclick="SystemApp.delUser('${u.id}')"><i class="fa-solid fa-trash"></i></button>
+                                    <button class="outline" style="width:auto; padding:5px 10px; font-size:11px;" onclick="AppCore.editUser('${u.id}', '${u.username}', '${u.password}', '${u.role}')">EDIT</button>
+                                    <button class="danger" style="width:auto; padding:5px 10px; font-size:11px;" onclick="AppCore.delUser('${u.id}')">DEL</button>
                                 </td>
                             </tr>
                         `;
@@ -609,23 +632,24 @@
 
             saveUser: async () => {
                 const id = document.getElementById('usr-id').value;
-                const usr = document.getElementById('usr-name').value.trim();
-                const pass = document.getElementById('usr-pass').value.trim();
-                const role = document.getElementById('usr-role').value;
+                const u = document.getElementById('usr-name').value.trim();
+                const p = document.getElementById('usr-pass').value.trim();
+                const r = document.getElementById('usr-role').value;
 
-                if(!usr || !pass) { Toast.show("Username and Password required.", "error"); return; }
+                if(!u || !p) return Toast.show("Identity fields required.", "error");
 
-                const payload = { username: usr, password: pass, role: role };
                 try {
-                    if(id) await supabase.from('system_users').update(payload).eq('id', id);
-                    else await supabase.from('system_users').insert([payload]);
+                    if(id) await supabase.from('system_users').update({username:u, password:p, role:r}).eq('id', id);
+                    else await supabase.from('system_users').insert([{username:u, password:p, role:r}]);
                     
-                    Toast.show(`Identity updated for [${usr}]`, 'success');
+                    Toast.show(`Operator ${u} secured.`, 'success');
+                    await AppCore.logAudit('USER_MANAGEMENT', `Provisioned/Updated user: ${u}`);
+                    
                     document.getElementById('usr-id').value = '';
                     document.getElementById('usr-name').value = '';
                     document.getElementById('usr-pass').value = '';
-                    SystemApp.loadUsers();
-                } catch(err) { Toast.show(`User Edit Failed: ${err.message}`, 'error'); }
+                    AppCore.loadDirectory();
+                } catch(e) { Toast.show(e.message, 'error'); }
             },
 
             editUser: (id, u, p, r) => {
@@ -633,117 +657,50 @@
                 document.getElementById('usr-name').value = u;
                 document.getElementById('usr-pass').value = p;
                 document.getElementById('usr-role').value = r;
-                Toast.show("Directory record loaded into buffer.", "info");
             },
 
             delUser: async (id) => {
-                if(confirm("Revoke operator access?")) {
+                if(confirm("Revoke operator access permanently?")) {
                     await supabase.from('system_users').delete().eq('id', id);
-                    Toast.show("Operator removed from directory.", "success");
-                    SystemApp.loadUsers();
+                    AppCore.loadDirectory();
                 }
             },
 
-            // E. Terminal Engine
-            initTerminal: () => {
-                document.getElementById('terminal-container').style.display = 'flex';
-                SystemApp.termPrint("SYSTEM ONLINE. SECURE CONNECTION ESTABLISHED.\nTYPE 'help' FOR COMMAND INDEX.\n");
-            },
-
-            termPrint: (text, speed = 10) => {
-                const out = document.getElementById('term-output');
-                let i = 0;
-                // Instant print for large blocks or simple fast interaction
-                out.innerHTML += text;
-                out.scrollTop = out.scrollHeight;
-            },
-
-            handleTerminalInput: async (e) => {
-                if(e.key === 'Enter') {
-                    const input = document.getElementById('term-input');
-                    const cmd = input.value.trim();
-                    input.value = '';
-                    const out = document.getElementById('term-output');
-                    out.innerHTML += `<br><span style="color:white;">root@osint-core:~#</span> ${cmd}\n`;
-                    
-                    const args = cmd.split(' ');
-                    const mainCmd = args[0].toLowerCase();
-
-                    if(mainCmd === 'help') {
-                        out.innerHTML += `
-AVAILABLE DIRECTIVES:
-  <span style="color:var(--accent-cyan);">scan [target_id]</span>  - Query the live databank for a specific target ID or Mobile.
-  <span style="color:var(--accent-cyan);">clear</span>             - Purge terminal display output.
-  <span style="color:var(--accent-cyan);">matrix</span>            - Execute visual system diagnostic.
-  <span style="color:var(--accent-cyan);">logout</span>            - Terminate active session safely.
-`;
-                    } else if (mainCmd === 'clear') {
-                        out.innerHTML = '';
-                    } else if (mainCmd === 'logout') {
-                        SystemApp.logout();
-                    } else if (mainCmd === 'matrix') {
-                        out.innerHTML += `> INITIALIZING SYSTEM DIAGNOSTICS...\n> CPU: OK [12 CORES ONLINE]\n> MEM: OK [128GB DDR5 SECURED]\n> NET: ENCRYPTED TUNNEL ACTIVE\n`;
-                    } else if (mainCmd === 'scan') {
-                        if(args.length < 2) { out.innerHTML += "> ERR: MISSING PARAMETER. USAGE: scan [target_id]\n"; }
-                        else { await SystemApp.execScan(args[1]); }
-                    } else if (cmd !== '') {
-                        out.innerHTML += `> ERR: UNKNOWN DIRECTIVE '${mainCmd}'. TYPE 'help'.\n`;
-                    }
-                    out.scrollTop = out.scrollHeight;
-                }
-            },
-
-            execScan: async (target) => {
-                const out = document.getElementById('term-output');
-                out.innerHTML += `> SCANNING GLOBAL NETWORK PROTOCOLS FOR [${target}]...\n`;
-                
-                // Simulate processing time
-                await new Promise(r => setTimeout(r, 1500));
-
+            // I. View: Audit Logs
+            loadAudit: async () => {
+                const tbody = document.querySelector('#tbl-audit tbody');
                 try {
-                    const clean = target.replace('@', '');
-                    const { data, error } = await supabase.from('osint_records')
-                        .select('*')
-                        .or(`target_id.ilike.%${clean}%,mobile.eq.${clean}`)
-                        .limit(1);
-
-                    if (error || !data || data.length === 0) {
-                        out.innerHTML += `> <span style="color:var(--accent-red);">ERR 404: TARGET TRACE FAILED. NO MATCH IN DATABANK.</span>\n`;
-                    } else {
-                        const rec = data[0];
-                        out.innerHTML += `
-<span style="color:var(--accent-cyan);">+======================================================+
-| TARGET ACQUIRED (LIVE DB SYNCED)                     |
-+======================================================+</span>
-  ID       : ${rec.target_id}
-  NAME     : ${rec.name}
-  ADDRESS  : ${rec.address}
-  CNIC     : ${rec.cnic}
-  MOBILE   : ${rec.mobile} [${rec.network}]
-  ALT NUM  : ${rec.other_number}
-  NOTES    : ${rec.data_payload}
-  UPDATED  : ${new Date(rec.last_updated).toLocaleString()}
-<span style="color:var(--accent-cyan);">+======================================================+</span>
-`;
-                        // Log search
-                        await supabase.from('audit_logs').insert([{ action: 'TERMINAL_SCAN', details: target, performed_by: SystemApp.currentUser.username }]);
-                    }
-                } catch(e) {
-                    out.innerHTML += `> <span style="color:var(--accent-red);">NETWORK FAULT: ${e.message}</span>\n`;
-                }
-                out.scrollTop = out.scrollHeight;
+                    const { data } = await supabase.from('audit_logs').select('*').order('timestamp', { ascending: false }).limit(50);
+                    tbody.innerHTML = '';
+                    data.forEach(l => {
+                        tbody.innerHTML += `
+                            <tr>
+                                <td style="color:var(--text-dim); font-family:var(--font-mono);">${new Date(l.timestamp).toLocaleString()}</td>
+                                <td style="color:var(--cyan-glow);">${l.performed_by}</td>
+                                <td><span style="background:rgba(255,255,255,0.1); padding:3px 6px; border-radius:4px;">${l.action}</span></td>
+                                <td>${l.details}</td>
+                            </tr>
+                        `;
+                    });
+                } catch(e) {}
             },
 
-            logout: () => { location.reload(); }
+            logAudit: async (action, details) => {
+                if(!AppCore.user) return;
+                try { await supabase.from('audit_logs').insert([{ action, details, performed_by: AppCore.user.username }]); } 
+                catch(e) {}
+            },
+
+            // J. System Logout
+            logout: () => {
+                AppCore.logAudit('LOGOUT', 'Operator terminated session.');
+                setTimeout(() => location.reload(), 300);
+            }
         };
 
-        // --- 5. EVENT BINDING ---
-        document.getElementById('login-pass').addEventListener('keypress', e => { if(e.key === 'Enter') SystemApp.authenticate(); });
-        document.getElementById('term-input').addEventListener('keypress', SystemApp.handleTerminalInput);
-
-        // Boot Init
-        Particles.init();
-
+        // Initialize Terminal Input Listener
+        document.getElementById('cmd-input').addEventListener('keypress', AppCore.handleCmd);
+        document.getElementById('login-pass').addEventListener('keypress', e => { if(e.key === 'Enter') AppCore.authenticate(); });
     </script>
 </body>
 </html>
