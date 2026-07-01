@@ -2,716 +2,627 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ENTERPRISE OSINT TERMINAL V10</title>
-    <!-- Supabase JS & FontAwesome -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Global Data Center OS | Master Architect Dilawar</title>
+    
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     
     <style>
-        /* ==========================================================================
-           ENTERPRISE CSS ARCHITECTURE
-           ========================================================================== */
+        /* Cyber/Data Center Theme Configuration */
         :root {
-            --bg-deep: #020617;
-            --bg-panel: rgba(15, 23, 42, 0.9);
-            --bg-input: rgba(0, 0, 0, 0.7);
-            --cyan-glow: #00f3ff;
-            --green-glow: #10b981;
-            --red-glow: #ef4444;
-            --yellow-glow: #f59e0b;
-            --text-main: #f8fafc;
-            --text-dim: #94a3b8;
-            --border-glass: rgba(0, 243, 255, 0.25);
-            --font-mono: 'Courier New', Courier, monospace;
-            --font-sans: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            --bg-space: #030712; 
+            --bg-panel: #0F172A;
+            --accent-navy: #1E3A8A;
+            --accent-pink: #06B6D4; /* Switched to a Cyber Cyan for Data Center feel */
+            --accent-pink-hover: #0891B2;
+            --gradient-brand: linear-gradient(135deg, #06B6D4 0%, #1E3A8A 100%);
+            --gradient-master: linear-gradient(135deg, #1E3A8A 0%, #0F172A 100%);
+            
+            --text-main: #F8FAFC; 
+            --text-muted: #94A3B8;
+            --glass-border: rgba(6, 182, 212, 0.2); 
+            --glass-bg: rgba(15, 23, 42, 0.85);
+            --danger: #EF4444; 
+            --input-bg: rgba(0,0,0,0.6);
+            --table-header: rgba(15, 23, 42, 0.95);
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-
-        body {
-            background-color: var(--bg-deep); color: var(--text-main); font-family: var(--font-sans);
-            height: 100vh; width: 100vw; overflow: hidden; position: relative;
-            background-image: radial-gradient(circle at 50% 50%, #0f172a 0%, #020617 100%);
+        :root.light-mode {
+            --bg-space: #F0F4F8; 
+            --bg-panel: #FFFFFF;
+            --accent-navy: #1E3A8A;
+            --accent-pink: #0284C7; 
+            --accent-pink-hover: #0369A1;
+            --gradient-brand: linear-gradient(135deg, #1E3A8A 0%, #0284C7 100%);
+            --gradient-master: linear-gradient(135deg, #FFFFFF 0%, #F0F4F8 100%);
+            
+            --text-main: #0A1128; 
+            --text-muted: #475569;
+            --glass-border: rgba(30, 58, 138, 0.15); 
+            --glass-bg: rgba(255, 255, 255, 0.95);
+            --input-bg: #FFFFFF;
+            --table-header: #F8FAFC;
         }
 
-        /* HARD ISOLATED SCREENS */
-        .screen-container {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            display: none; justify-content: center; align-items: center; z-index: 10;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Montserrat', sans-serif; }
         
-        /* Glass Panels */
-        .glass-box {
-            background: var(--bg-panel); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
-            border: 1px solid var(--border-glass); border-radius: 12px; padding: 40px; 
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9), inset 0 0 20px rgba(0, 243, 255, 0.05);
-            animation: popIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        body { 
+            background: var(--bg-space); color: var(--text-main); 
+            min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden; 
+            transition: background 0.4s ease, color 0.4s ease;
         }
 
-        @keyframes popIn { 0% { opacity: 0; transform: scale(0.95) translateY(10px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--accent-pink); border-radius: 10px; }
 
-        /* Typography & Inputs */
-        h1, h2, h3, h4 { text-transform: uppercase; letter-spacing: 2px; font-weight: 800; margin-bottom: 20px; }
-        .text-cyan { color: var(--cyan-glow); text-shadow: 0 0 10px rgba(0, 243, 255, 0.3); }
-        .text-green { color: var(--green-glow); }
-        .text-red { color: var(--red-glow); }
+        /* OVERLAYS */
+        #globalLoginOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-space); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .login-box { background: var(--glass-bg); border: 1px solid var(--accent-pink); border-radius: 12px; padding: 3.5rem; text-align: center; box-shadow: 0 0 40px rgba(6, 182, 212, 0.15); max-width: 450px; width: 90%; backdrop-filter: blur(20px); position: relative; }
+        .login-box::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 6px; background: var(--gradient-brand); }
+        .login-box h1 { font-size: 2.8rem; font-weight: 900; letter-spacing: 2px; margin-bottom: 0.5rem; }
+        .login-box h1 span { color: var(--accent-pink); }
+        .login-box p { color: var(--text-muted); margin-bottom: 2.5rem; letter-spacing: 2px; font-weight: 600; font-size: 0.85rem; text-transform: uppercase; }
+        .login-box input { width: 100%; padding: 1.2rem; background: var(--input-bg); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-main); font-size: 1.1rem; margin-bottom: 1.5rem; outline: none; text-align: center; letter-spacing: 1px;}
+        .login-box input:focus { border-color: var(--accent-pink); box-shadow: 0 0 15px rgba(6, 182, 212, 0.3); }
+        #loginError { color: var(--danger); font-weight: 700; margin-bottom: 1.5rem; min-height: 20px; font-size: 0.95rem; }
 
-        .input-group { position: relative; margin-bottom: 15px; width: 100%; }
-        .input-group i { position: absolute; left: 15px; top: 16px; color: var(--text-dim); }
-        input, select {
-            width: 100%; padding: 15px 15px 15px 45px; background: var(--bg-input); color: white;
-            border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; font-family: var(--font-mono);
-            font-size: 14px; transition: 0.3s; outline: none; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+        #vipWelcomeOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-space); z-index: 10000; display: none; flex-direction: column; justify-content: center; align-items: center; text-align: center; backdrop-filter: blur(15px); }
+        #vipWelcomeOverlay h1 { font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 300; letter-spacing: 5px; margin-top: 1.5rem; }
+        #vipWelcomeOverlay span { font-weight: 900; color: var(--accent-pink); }
+
+        /* 30-SECOND RADAR ANIMATION */
+        #searchRadarOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(3, 7, 18, 0.95); z-index: 10000; display: none; flex-direction: column; justify-content: center; align-items: center; text-align: center; backdrop-filter: blur(20px); }
+        .radar-container { position: relative; width: 250px; height: 250px; border-radius: 50%; border: 2px solid var(--accent-pink); box-shadow: 0 0 50px rgba(6, 182, 212, 0.2); overflow: hidden; margin-bottom: 3rem; background: repeating-radial-gradient(transparent, transparent 20px, rgba(6, 182, 212, 0.1) 21px, transparent 22px); }
+        .radar-sweep { position: absolute; top: 50%; left: 50%; width: 150px; height: 150px; background: linear-gradient(45deg, rgba(6, 182, 212, 0.8) 0%, transparent 50%); transform-origin: 0% 0%; animation: sweep 2s linear infinite; }
+        @keyframes sweep { to { transform: rotate(360deg); } }
+        .scan-status { font-family: 'Share Tech Mono', monospace; font-size: 1.5rem; color: var(--accent-pink); letter-spacing: 3px; margin-bottom: 1rem; text-shadow: 0 0 10px rgba(6, 182, 212, 0.5); }
+        .scan-progress-container { width: 80%; max-width: 600px; height: 6px; background: #1E293B; border-radius: 10px; overflow: hidden; margin-bottom: 1rem; }
+        .scan-progress-bar { width: 0%; height: 100%; background: var(--accent-pink); box-shadow: 0 0 15px var(--accent-pink); transition: width 0.2s linear; }
+        .scan-timer { font-family: 'Share Tech Mono', monospace; color: var(--text-muted); font-size: 1.2rem; }
+
+        /* APP WRAPPER */
+        #appWrapper { display: none; flex-direction: column; min-height: 100vh; }
+        header { background: var(--glass-bg); backdrop-filter: blur(25px); border-bottom: 1px solid var(--glass-border); padding: 1.5rem 2rem; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; box-shadow: 0 4px 30px rgba(0,0,0,0.2); }
+        header h1 { font-size: clamp(1.5rem, 3vw, 2.2rem); letter-spacing: 2px; font-weight: 900; color: var(--text-main); }
+        header h1 span { color: var(--accent-pink); }
+        .header-meta { text-align: right; font-size: 0.95rem; color: var(--text-muted); }
+
+        nav { background: var(--glass-bg); display: flex; padding: 0 2rem; border-bottom: 1px solid var(--glass-border); overflow-x: auto; scrollbar-width: none; white-space: nowrap; }
+        .nav-tab { padding: 1.2rem 1.5rem; border: none; background: none; font-size: 0.9rem; font-weight: 700; color: var(--text-muted); cursor: pointer; border-bottom: 4px solid transparent; transition: all 0.3s ease; letter-spacing: 1px; text-transform: uppercase; display: flex; align-items: center; gap: 0.8rem; outline: none; }
+        .nav-tab:hover, .nav-tab.active { color: var(--accent-pink); border-bottom-color: var(--accent-pink); }
+        .nav-tab.active { background: rgba(6, 182, 212, 0.05); }
+        .nav-right-group { margin-left: auto; display: flex; align-items: center; }
+
+        main { flex: 1; padding: 2rem; max-width: 1920px; width: 100%; margin: 0 auto; }
+        .panel { background: var(--bg-panel); border: 1px solid var(--glass-border); border-radius: 16px; padding: 2.5rem; box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1); display: none; }
+        .panel.active { display: block; animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        h2.panel-title { margin-bottom: 2rem; color: var(--text-main); font-size: clamp(1.4rem, 3vw, 1.8rem); display: flex; align-items: center; gap: 1rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 1rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+        h2.panel-title i { color: var(--accent-pink); }
+
+        /* SEARCH INTERFACE */
+        .search-console { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4rem 2rem; background: var(--glass-bg); border-radius: 12px; border: 1px solid var(--glass-border); margin-bottom: 2rem; }
+        .search-console input { width: 100%; max-width: 600px; padding: 1.5rem; font-size: 1.2rem; background: var(--input-bg); border: 2px solid var(--accent-navy); border-radius: 8px; color: var(--accent-pink); text-align: center; letter-spacing: 2px; font-family: 'Share Tech Mono', monospace; outline: none; transition: border-color 0.3s; margin-bottom: 1.5rem; }
+        .search-console input:focus { border-color: var(--accent-pink); box-shadow: 0 0 20px rgba(6, 182, 212, 0.2); }
+        
+        .dossier-card { background: var(--bg-panel); border: 1px solid var(--glass-border); border-radius: 12px; padding: 3rem; margin-top: 2rem; display: none; position: relative; overflow: hidden; }
+        .dossier-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--accent-pink); }
+        .dossier-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; }
+        .data-field label { display: block; font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 0.5rem; font-weight: 700; }
+        .data-field .value { font-size: 1.2rem; font-weight: 800; color: var(--text-main); font-family: 'Share Tech Mono', monospace; }
+
+        /* BUTTONS */
+        .btn { background: var(--gradient-brand); color: #FFF; border: none; padding: 1rem 2rem; border-radius: 8px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 0.8rem; font-size: 1rem; text-transform: uppercase; letter-spacing: 1px; transition: all 0.3s; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(6, 182, 212, 0.2); }
+        .btn-outline { background: transparent; border: 2px solid var(--accent-pink); color: var(--accent-pink); }
+        .btn-outline:hover { background: rgba(6, 182, 212, 0.1); }
+        
+        #alertBox { padding: 1.2rem 2rem; border-radius: 8px; margin-bottom: 2rem; display: none; font-weight: 700; font-size: 1rem; border-left: 5px solid; }
+        .alert-good { background: rgba(16, 185, 129, 0.1); color: #10B981; border-color: #10B981; }
+        .alert-bad { background: rgba(239, 68, 68, 0.1); color: #EF4444; border-color: #EF4444; }
+
+        /* INJECTION SYSTEM & FORMS */
+        .injection-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; margin-bottom: 2rem; }
+        .form-group input { width: 100%; padding: 1.2rem; background: var(--input-bg); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-main); font-size: 1rem; outline: none; }
+        .form-group input:focus { border-color: var(--accent-pink); }
+        
+        #secAuthWall { background: var(--glass-bg); border: 2px solid var(--danger); border-radius: 16px; padding: 4rem 3rem; text-align: center; max-width: 550px; margin: 0 auto; }
+        #secAuthWall input { width: 100%; padding: 1.2rem; background: var(--input-bg); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-main); font-size: 1.2rem; margin-bottom: 2rem; text-align: center; letter-spacing: 2px; }
+
+        table { width: 100%; border-collapse: separate; border-spacing: 0; text-align: left; }
+        th { background: var(--table-header); color: var(--text-muted); font-weight: 800; padding: 1.2rem; border-bottom: 1px solid var(--glass-border); text-transform: uppercase; font-size: 0.85rem; letter-spacing: 1px; }
+        td { padding: 1.2rem; border-bottom: 1px solid var(--glass-border); color: var(--text-main); vertical-align: middle; }
+
+        @media (max-width: 768px) {
+            .injection-grid { grid-template-columns: 1fr; }
+            header { flex-direction: column; text-align: center; gap: 1rem; padding: 1rem; }
         }
-        input:focus, select:focus { border-color: var(--cyan-glow); box-shadow: 0 0 15px rgba(0, 243, 255, 0.3), inset 0 2px 4px rgba(0,0,0,0.5); }
-        select option { background: #020617; color: var(--cyan-glow); }
-
-        button {
-            width: 100%; padding: 15px; background: linear-gradient(90deg, #0891b2, #0369a1);
-            color: white; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; font-weight: bold; cursor: pointer;
-            text-transform: uppercase; transition: 0.3s; letter-spacing: 1px;
-        }
-        button:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0, 243, 255, 0.3); background: linear-gradient(90deg, #06b6d4, #0284c7); }
-        button:disabled { filter: grayscale(1); cursor: not-allowed; transform: none; opacity: 0.7; }
-        button.danger { background: linear-gradient(90deg, #b91c1c, #991b1b); }
-        button.danger:hover { box-shadow: 0 10px 20px rgba(239, 68, 68, 0.3); background: linear-gradient(90deg, #dc2626, #b91c1c); }
-        button.outline { background: transparent; border: 1px solid var(--border-glass); color: var(--cyan-glow); }
-        button.outline:hover { background: rgba(0, 243, 255, 0.1); }
-
-        /* Specific Containers */
-        #login-box { width: 450px; text-align: center; }
-        #boot-box { width: 700px; text-align: left; }
-        .progress-track { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; margin: 20px 0; }
-        #boot-progress { width: 0%; height: 100%; background: var(--cyan-glow); box-shadow: 0 0 10px var(--cyan-glow); transition: 0.1s; }
-        #boot-logs { height: 150px; font-family: var(--font-mono); font-size: 13px; color: var(--text-dim); display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden; }
-
-        /* Workspace Layout */
-        #workspace-layout { display: flex; width: 100vw; height: 100vh; }
-        
-        .sidebar { width: 280px; background: rgba(15, 23, 42, 0.98); border-right: 1px solid var(--border-glass); display: flex; flex-direction: column; padding: 20px; z-index: 20; }
-        .brand { text-align: center; padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; }
-        .nav-item { padding: 15px; border-radius: 8px; cursor: pointer; color: var(--text-dim); font-weight: bold; margin-bottom: 10px; display: flex; align-items: center; gap: 15px; transition: 0.3s; border: 1px solid transparent; }
-        .nav-item i { font-size: 18px; width: 20px; text-align: center; }
-        .nav-item:hover, .nav-item.active { background: rgba(0, 243, 255, 0.1); color: var(--cyan-glow); border-color: rgba(0, 243, 255, 0.3); box-shadow: inset 0 0 15px rgba(0, 243, 255, 0.1); }
-        
-        .main-content { flex-grow: 1; position: relative; background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAAXNSR0IEME9M9cSy9FvfHvcx2gMPkp1H5Dj4YaKufPRsAyon8Tf///9MgjoJCXHqkAEAqSgR+R52QjAAAAAASUVORK5CYII=') repeat; }
-        .view-section { display: none; width: 100%; height: 100%; padding: 30px; overflow-y: auto; }
-
-        /* Unified Terminal + Inject View */
-        .split-workspace { display: flex; gap: 30px; height: calc(100vh - 60px); }
-        
-        .terminal-wrapper { flex-grow: 1; background: rgba(0, 0, 0, 0.85); border: 1px solid var(--green-glow); border-radius: 12px; display: flex; flex-direction: column; box-shadow: inset 0 0 30px rgba(16, 185, 129, 0.05); }
-        .term-header { background: rgba(16, 185, 129, 0.15); padding: 15px 20px; border-bottom: 1px solid rgba(16, 185, 129, 0.4); color: var(--green-glow); font-weight: bold; display: flex; justify-content: space-between; }
-        .term-body { flex-grow: 1; padding: 20px; overflow-y: auto; color: var(--green-glow); font-family: var(--font-mono); font-size: 15px; white-space: pre-wrap; line-height: 1.6; text-shadow: 0 0 5px rgba(16, 185, 129, 0.3); }
-        .term-input-area { display: flex; padding: 15px 20px; background: rgba(0, 0, 0, 0.6); border-top: 1px solid rgba(16, 185, 129, 0.4); align-items: center; }
-        .term-prompt { color: var(--green-glow); font-weight: bold; margin-right: 15px; }
-        #cmd-input { background: transparent; border: none; color: white; flex-grow: 1; font-family: var(--font-mono); font-size: 16px; outline: none; padding: 0; box-shadow: none; }
-
-        .inject-wrapper { width: 450px; background: var(--bg-panel); border: 1px solid var(--border-glass); border-radius: 12px; padding: 25px; display: none; flex-direction: column; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        
-        /* Data Tables */
-        .table-box { background: var(--bg-panel); border: 1px solid var(--border-glass); border-radius: 12px; padding: 25px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        table { width: 100%; border-collapse: collapse; font-size: 14px; }
-        th, td { padding: 15px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.08); }
-        th { color: var(--cyan-glow); font-weight: bold; text-transform: uppercase; background: rgba(0,0,0,0.4); }
-        tr:hover { background: rgba(0, 243, 255, 0.08); }
-        .badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; border: 1px solid; }
-        .badge.admin { color: var(--cyan-glow); border-color: var(--cyan-glow); background: rgba(0, 243, 255, 0.1); }
-        .badge.user { color: var(--yellow-glow); border-color: var(--yellow-glow); background: rgba(245, 158, 11, 0.1); }
-
-        /* Toast Notifications */
-        #toast-box { position: fixed; bottom: 30px; right: 30px; z-index: 9999; display: flex; flex-direction: column; gap: 15px; }
-        .toast { background: rgba(15, 23, 42, 0.95); border-left: 5px solid var(--cyan-glow); padding: 15px 25px; border-radius: 6px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); display: flex; align-items: center; gap: 15px; min-width: 300px; animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        .toast.success { border-left-color: var(--green-glow); }
-        .toast.error { border-left-color: var(--red-glow); }
-        @keyframes slideIn { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        
-        .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: white; animation: spin 1s linear infinite; margin-left: 10px; }
-        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
-    <div id="toast-box"></div>
-
-    <!-- ==========================================
-         SCREEN 1: LOGIN GATEWAY
-         ========================================== -->
-    <div id="screen-login" class="screen-container" style="display: flex;">
-        <div id="login-box" class="glass-box">
-            <div style="font-size: 45px; color: var(--cyan-glow); margin-bottom: 20px;"><i class="fa-solid fa-fingerprint"></i></div>
-            <h2 class="text-cyan">AUTH_GATEWAY V10</h2>
-            <div class="input-group">
-                <i class="fa-solid fa-user-astronaut"></i>
-                <input type="text" id="login-user" placeholder="Operator Identification" autocomplete="off">
-            </div>
-            <div class="input-group">
-                <i class="fa-solid fa-key"></i>
-                <input type="password" id="login-pass" placeholder="Secure Passkey">
-            </div>
-            <button onclick="AppCore.authenticate()" id="btn-login" style="margin-top: 15px;">
-                Initialize Connection <span id="spin-login" class="spinner" style="display:none;"></span>
-            </button>
+    <!-- LOGIN SCREEN -->
+    <div id="globalLoginOverlay">
+        <div class="login-box">
+            <h1>DATA <span>CENTER</span></h1>
+            <p>Global Intelligence Firewall</p>
+            <div id="loginError"></div>
+            <input type="text" id="loginUsername" placeholder="Agent ID" autocomplete="off">
+            <input type="password" id="loginPassword" placeholder="Passkey" onkeypress="if(event.key === 'Enter') executeLogin()">
+            <button class="btn" style="width: 100%; justify-content: center;" onclick="executeLogin()"><i class="fas fa-fingerprint"></i> Authenticate Sequence</button>
         </div>
     </div>
 
-    <!-- ==========================================
-         SCREEN 2: SYSTEM BOOT
-         ========================================== -->
-    <div id="screen-boot" class="screen-container">
-        <div id="boot-box" class="glass-box">
-            <h2 id="boot-title" class="text-cyan"><i class="fa-solid fa-shield-halved"></i> HANDSHAKE ESTABLISHED</h2>
-            <div class="progress-track"><div id="boot-progress"></div></div>
-            <div id="boot-logs"></div>
-        </div>
+    <!-- VIP WELCOME -->
+    <div id="vipWelcomeOverlay">
+        <i class="fas fa-shield-check fa-4x" style="color:var(--accent-pink); margin-bottom: 1rem;"></i>
+        <h1>WELCOME, <span id="vipNameDisplay"></span></h1>
+        <p style="color:var(--text-muted); font-size:1.1rem; margin-top:1rem; letter-spacing:2px; font-weight: 700; text-transform: uppercase;">Establishing secure encrypted connection...</p>
     </div>
 
-    <!-- ==========================================
-         SCREEN 3: MASTER WORKSPACE
-         ========================================== -->
-    <div id="screen-workspace" class="screen-container">
-        <div id="workspace-layout">
+    <!-- 30 SECOND SEARCH ANIMATION -->
+    <div id="searchRadarOverlay">
+        <div class="radar-container"><div class="radar-sweep"></div></div>
+        <div class="scan-status" id="searchStatusTxt">INITIALIZING DEEP SCAN...</div>
+        <div class="scan-progress-container"><div class="scan-progress-bar" id="searchProgressBar"></div></div>
+        <div class="scan-timer">ESTIMATED TIME: <span id="searchTimeLeft">30.00</span>s</div>
+        <p style="color: var(--danger); font-size: 0.85rem; margin-top: 2rem; letter-spacing: 1px; font-weight: 800;">WARNING: DO NOT TERMINATE SESSION. TRACE IN PROGRESS.</p>
+    </div>
+
+    <!-- MAIN APP -->
+    <div id="appWrapper">
+        <header>
+            <div>
+                <h1>GLOBAL <span>DATA CENTER</span></h1>
+                <div style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem; letter-spacing: 2px; font-weight: 700; text-transform: uppercase;" id="headerRoleLabel">Master Valuation Engine</div>
+            </div>
+            <div class="header-meta">
+                <div id="liveClock" style="font-weight: 800; font-family: 'Share Tech Mono', monospace; font-size: 1.2rem; color: var(--accent-pink);"></div>
+                <div style="margin-top: 0.4rem; font-size: 0.8rem; color: var(--text-muted); font-weight: 700; letter-spacing: 1px;"><i class="fas fa-lock"></i> AES-256 SECURE</div>
+            </div>
+        </header>
+
+        <nav>
+            <button id="tab-search" class="nav-tab active" onclick="switchPanel('search')"><i class="fas fa-search"></i> Database Query</button>
+            <button id="tab-injection" class="nav-tab" onclick="switchPanel('injection')"><i class="fas fa-satellite-dish"></i> Data Injection</button>
+            <button id="tab-requests" class="nav-tab" onclick="switchPanel('requests')"><i class="fas fa-bell"></i> Missing Data Alerts</button>
+            <button id="tab-users" class="nav-tab" onclick="switchPanel('users')" style="display:none;"><i class="fas fa-user-shield"></i> Security Auth</button>
             
-            <!-- Dynamic Sidebar -->
-            <div class="sidebar">
-                <div class="brand">
-                    <h3 class="text-cyan" style="margin:0;"><i class="fa-solid fa-server"></i> OSINT CORE</h3>
-                    <div id="sidebar-user" style="color:var(--text-dim); font-size:12px; margin-top:5px; font-family:var(--font-mono);"></div>
-                </div>
+            <div class="nav-right-group">
+                <button class="nav-tab" onclick="executeLogout()" style="color: var(--danger); border-bottom: none;"><i class="fas fa-power-off"></i> Terminate</button>
+            </div>
+        </nav>
+
+        <main>
+            <div id="alertBox"></div>
+
+            <!-- SEARCH / QUERY PANEL -->
+            <div id="search" class="panel active">
+                <h2 class="panel-title"><i class="fas fa-globe"></i> Global Intelligence Query</h2>
                 
-                <div class="nav-item active" onclick="AppCore.switchView('view-terminal', this)"><i class="fa-solid fa-terminal"></i> Global Search</div>
-                
-                <div id="admin-nav" style="display: none; flex-direction: column;">
-                    <div class="nav-item" onclick="AppCore.switchView('view-databanks', this)"><i class="fa-solid fa-database"></i> Core Databanks</div>
-                    <div class="nav-item" onclick="AppCore.switchView('view-directory', this)"><i class="fa-solid fa-users-gear"></i> Identity Directory</div>
-                    <div class="nav-item" onclick="AppCore.switchView('view-audit', this)"><i class="fa-solid fa-list-check"></i> System Audit Logs</div>
+                <div class="search-console">
+                    <p style="color: var(--text-muted); margin-bottom: 1rem; font-weight: 700; letter-spacing: 2px;">ENTER MOBILE OR ID CARD NUMBER</p>
+                    <input type="text" id="queryInput" placeholder="03XXXXXXXXX / XXXXX-XXXXXXX-X" autocomplete="off" onkeypress="if(event.key === 'Enter') triggerSearchProtocol()">
+                    <button class="btn" style="padding: 1.2rem 3rem; font-size: 1.1rem;" onclick="triggerSearchProtocol()"><i class="fas fa-crosshairs"></i> Execute Deep Scan</button>
                 </div>
 
-                <div style="flex-grow:1;"></div>
-                <button class="outline" onclick="AppCore.logout()"><i class="fa-solid fa-power-off"></i> Terminate Session</button>
+                <div id="dossierResult" class="dossier-card">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 1rem;">
+                        <h3 style="color: var(--accent-pink); font-size: 1.5rem; letter-spacing: 2px; text-transform: uppercase;"><i class="fas fa-id-card"></i> Subject Dossier Found</h3>
+                        <span class="badge" style="background: rgba(16, 185, 129, 0.1); color: #10B981; padding: 0.5rem 1rem; border-radius: 4px; font-weight: 800; font-size: 0.8rem; letter-spacing: 1px;">VERIFIED MATCH</span>
+                    </div>
+                    
+                    <div class="dossier-grid">
+                        <div class="data-field"><label>Full Name</label><div class="value" id="resName">---</div></div>
+                        <div class="data-field"><label>ID Card Number</label><div class="value" id="resIdCard">---</div></div>
+                        <div class="data-field"><label>Mobile Number</label><div class="value" id="resMobile" style="color: var(--accent-pink);">---</div></div>
+                        <div class="data-field"><label>SIM Network</label><div class="value" id="resSim">---</div></div>
+                        <div class="data-field"><label>Other/Alternate Number</label><div class="value" id="resOtherNum">---</div></div>
+                        <div class="data-field" style="grid-column: 1 / -1;"><label>Registered Address</label><div class="value" id="resAddress">---</div></div>
+                    </div>
+                </div>
             </div>
 
-            <!-- Main Content Container -->
-            <div class="main-content">
+            <!-- DATA INJECTION PANEL -->
+            <div id="injection" class="panel">
+                <h2 class="panel-title"><i class="fas fa-database"></i> Secure Data Injection System</h2>
                 
-                <!-- VIEW 1: TERMINAL & INJECT -->
-                <div id="view-terminal" class="view-section" style="display: block;">
-                    <div class="split-workspace">
-                        <!-- Left: Terminal -->
-                        <div class="terminal-wrapper">
-                            <div class="term-header">
-                                <span>OSINT QUERY TERMINAL V10.0</span>
-                                <span id="term-status" style="color:var(--text-main);">STATUS: LINKED</span>
-                            </div>
-                            <div class="term-body" id="term-output"></div>
-                            <div class="term-input-area">
-                                <span class="term-prompt">root@osint:~#</span>
-                                <input type="text" id="cmd-input" placeholder="Type 'help' for commands and press Enter..." autocomplete="off">
-                            </div>
+                <div id="secAuthWall">
+                    <h3 style="color: var(--danger); margin-bottom: 1rem; font-size: 1.5rem;"><i class="fas fa-shield-alt"></i> Secondary Verification Required</h3>
+                    <p style="color: var(--text-muted); margin-bottom: 2rem; font-weight: 600;">Data injection is restricted. Enter Level-2 Security Key.</p>
+                    <input type="password" id="secKey" placeholder="Enter Sec-Key" onkeypress="if(event.key === 'Enter') unlockInjection()">
+                    <button class="btn" onclick="unlockInjection()" style="width: 100%; justify-content: center; background: var(--danger);"><i class="fas fa-unlock"></i> Bypass Firewall</button>
+                </div>
+                
+                <div id="injectionWorkspace" style="display: none;">
+                    <div class="dossier-card" style="display: block; margin-top: 0;">
+                        <h3 style="color: var(--text-main); margin-bottom: 2rem; font-size: 1.2rem; letter-spacing: 1px;"><i class="fas fa-user-plus" style="color: var(--accent-pink);"></i> Inject New Subject Record</h3>
+                        <div class="injection-grid">
+                            <div class="form-group"><input type="text" id="injName" placeholder="Full Name"></div>
+                            <div class="form-group"><input type="text" id="injIdCard" placeholder="ID Card Number (Format: XXXXX-XXXXXXX-X)"></div>
+                            <div class="form-group"><input type="text" id="injMobile" placeholder="Primary Mobile Number"></div>
+                            <div class="form-group"><input type="text" id="injSim" placeholder="SIM Network (e.g., Jazz, Zong, Telenor)"></div>
+                            <div class="form-group"><input type="text" id="injOtherNum" placeholder="Other Number (Optional)"></div>
+                            <div class="form-group" style="grid-column: 1 / -1;"><input type="text" id="injAddress" placeholder="Complete Address"></div>
                         </div>
-
-                        <!-- Right: Data Injector (Admin Only) -->
-                        <div class="inject-wrapper" id="inject-panel">
-                            <h4 class="text-cyan" style="margin-top:0; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px;"><i class="fa-solid fa-pen-to-square"></i> Payload Injection</h4>
-                            <div class="input-group"><i class="fa-solid fa-fingerprint"></i><input type="text" id="inj-id" placeholder="Target ID (Required)"></div>
-                            <div class="input-group"><i class="fa-solid fa-user"></i><input type="text" id="inj-name" placeholder="Full Name"></div>
-                            <div class="input-group"><i class="fa-solid fa-map-pin"></i><input type="text" id="inj-address" placeholder="Address"></div>
-                            <div class="input-group"><i class="fa-solid fa-id-card"></i><input type="text" id="inj-cnic" placeholder="CNIC Number"></div>
-                            <div class="input-group"><i class="fa-solid fa-phone"></i><input type="text" id="inj-mobile" placeholder="Mobile Node"></div>
-                            <div class="input-group">
-                                <i class="fa-solid fa-tower-cell"></i>
-                                <select id="inj-network">
-                                    <option value="" disabled selected>Carrier Network...</option>
-                                    <option value="Jazz">Jazz</option>
-                                    <option value="Zong">Zong</option>
-                                    <option value="Telenor">Telenor</option>
-                                    <option value="Ufone">Ufone</option>
-                                    <option value="SCOM">SCOM</option>
-                                </select>
-                            </div>
-                            <div class="input-group"><i class="fa-solid fa-link"></i><input type="text" id="inj-other" placeholder="Alternate Connection"></div>
-                            <div class="input-group"><i class="fa-solid fa-file-code"></i><input type="text" id="inj-payload" placeholder="Encrypted Notes"></div>
-                            
-                            <button onclick="AppCore.injectPayload()" id="btn-inject" style="margin-top:auto;"><i class="fa-solid fa-upload"></i> Commit to Matrix <span id="spin-inject" class="spinner" style="display:none;"></span></button>
-                        </div>
+                        <button class="btn" style="width: 100%; justify-content: center; font-size: 1.1rem; padding: 1.2rem;" onclick="executeDataInjection()"><i class="fas fa-upload"></i> Commit to Global Database</button>
                     </div>
                 </div>
+            </div>
 
-                <!-- VIEW 2: DATABANKS -->
-                <div id="view-databanks" class="view-section">
-                    <h3 class="text-cyan"><i class="fa-solid fa-database"></i> Live Encrypted Databanks</h3>
-                    <div class="table-box">
-                        <div style="text-align: right; margin-bottom: 15px;">
-                            <button onclick="AppCore.purgeRecords()" class="danger" style="width:auto; padding:10px 20px; font-size:12px;"><i class="fa-solid fa-skull"></i> PURGE ALL</button>
-                        </div>
-                        <div style="max-height: 60vh; overflow-y: auto;">
-                            <table id="tbl-records">
-                                <thead><tr><th>Target ID</th><th>Name / Node</th><th>Carrier</th><th>Last Updated</th><th>Actions</th></tr></thead>
-                                <tbody></tbody>
-                            </table>
-                        </div>
-                    </div>
+            <!-- DATA REQUESTS ALERT PANEL -->
+            <div id="requests" class="panel">
+                <h2 class="panel-title"><i class="fas fa-bell"></i> Missing Data Alerts Log</h2>
+                <p style="color: var(--text-muted); margin-bottom: 1.5rem; font-weight: 600;">Automated alerts generated when a search yields zero results. Admins must locate and inject this data.</p>
+                <div style="overflow-x: auto; border: 1px solid var(--glass-border); border-radius: 12px; background: var(--bg-panel);">
+                    <table>
+                        <thead><tr><th>Search Query</th><th>Requested By Agent</th><th>Timestamp</th><th>Status</th></tr></thead>
+                        <tbody id="requestsTableBody">
+                            <tr><td colspan="4" style="text-align: center; padding: 2rem; color: var(--text-muted);">Syncing alerts...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
+            </div>
 
-                <!-- VIEW 3: DIRECTORY -->
-                <div id="view-directory" class="view-section">
-                    <h3 class="text-cyan"><i class="fa-solid fa-users-gear"></i> System Operators</h3>
-                    <div style="display: flex; gap: 30px;">
-                        <div class="table-box" style="width: 350px; height: fit-content;">
-                            <h4 style="margin-top:0;">Provision Access</h4>
-                            <input type="hidden" id="usr-id">
-                            <div class="input-group"><i class="fa-solid fa-user"></i><input type="text" id="usr-name" placeholder="Operator Name"></div>
-                            <div class="input-group"><i class="fa-solid fa-key"></i><input type="text" id="usr-pass" placeholder="Passkey"></div>
-                            <div class="input-group">
-                                <i class="fa-solid fa-shield"></i>
-                                <select id="usr-role">
-                                    <option value="User">Standard Terminal User</option>
-                                    <option value="Admin">Master Console Admin</option>
-                                </select>
-                            </div>
-                            <button onclick="AppCore.saveUser()"><i class="fa-solid fa-check"></i> Authorize</button>
-                        </div>
-                        <div class="table-box" style="flex-grow: 1; max-height: 70vh; overflow-y: auto;">
-                            <table id="tbl-users">
-                                <thead><tr><th>Identity</th><th>Clearance</th><th>Status</th><th>Actions</th></tr></thead>
-                                <tbody></tbody>
-                            </table>
-                        </div>
+            <!-- SECURITY / USER MANAGEMENT PANEL -->
+            <div id="users" class="panel">
+                <h2 class="panel-title"><i class="fas fa-user-shield"></i> Agent Authorization Control</h2>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+                    <div class="dossier-card" style="display: block; margin-top: 0; padding: 2rem;">
+                        <h3 id="userFormTitle" style="color: var(--text-main); margin-bottom: 1.5rem;">Provision New Agent</h3>
+                        <div class="form-group"><input type="text" id="newFullName" placeholder="Agent Full Name" autocomplete="off" style="margin-bottom: 1rem;"></div>
+                        <div class="form-group"><input type="text" id="newUsername" placeholder="Login ID" autocomplete="off" style="margin-bottom: 1rem;"></div>
+                        <div class="form-group"><input type="text" id="newPassword" placeholder="Set Passkey" style="margin-bottom: 1rem;"></div>
+                        <select id="newRole" style="width: 100%; padding: 1rem; background: var(--input-bg); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-main); margin-bottom: 1.5rem; outline: none; font-weight: 600;">
+                            <option value="user">Standard Operative</option>
+                            <option value="master">Master Architect</option>
+                        </select>
+                        <button id="userFormBtn" class="btn" style="width: 100%; justify-content: center;" onclick="saveUser()"><i class="fas fa-save"></i> Save Credentials</button>
+                        <button id="userFormCancelBtn" class="btn btn-outline" style="width: 100%; justify-content: center; margin-top: 1rem; display: none;" onclick="cancelUserEdit()">Cancel Update</button>
                     </div>
-                </div>
-
-                <!-- VIEW 4: AUDIT LOGS -->
-                <div id="view-audit" class="view-section">
-                    <h3 class="text-cyan"><i class="fa-solid fa-list-check"></i> System Audit Trail</h3>
-                    <div class="table-box" style="max-height: 75vh; overflow-y: auto;">
-                        <table id="tbl-audit">
-                            <thead><tr><th>Timestamp</th><th>Operator</th><th>Action Class</th><th>Details Payload</th></tr></thead>
-                            <tbody></tbody>
+                    
+                    <div style="overflow-x: auto; border: 1px solid var(--glass-border); border-radius: 12px; background: var(--bg-panel); height: fit-content;">
+                        <table>
+                            <thead><tr><th>Agent Name</th><th>Login ID</th><th>Clearance</th><th>Actions</th></tr></thead>
+                            <tbody id="usersTableBody"></tbody>
                         </table>
                     </div>
                 </div>
-
             </div>
-        </div>
+        </main>
     </div>
 
-    <!-- ==========================================
-         ENTERPRISE JAVASCRIPT LOGIC
-         ========================================== -->
     <script>
-        // 1. SUPABASE CONNECTION
-        const CONFIG = {
-            URL: 'https://adqiprobgmyzsxrwrjdo.supabase.co',
-            KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkcWlwcm9iZ215enN4cndyamRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4ODc5NDYsImV4cCI6MjA5ODQ2Mzk0Nn0.G8gEWElZs6eftJ4sRWCDx6fhyEX_icutmIPMWcQnefQ'
-        };
-        const supabase = window.supabase.createClient(CONFIG.URL, CONFIG.KEY);
+        // NEW SUPABASE DATA CENTER CREDENTIALS
+        const supabaseUrl = 'https://adqiprobgmyzsxrwrjdo.supabase.co'; 
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkcWlwcm9iZ215enN4cndyamRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4ODc5NDYsImV4cCI6MjA5ODQ2Mzk0Nn0.G8gEWElZs6eftJ4sRWCDx6fhyEX_icutmIPMWcQnefQ';
+        const db = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-        // 2. TOAST ENGINE
-        const Toast = {
-            show: (msg, type = 'info') => {
-                const box = document.getElementById('toast-box');
-                const t = document.createElement('div');
-                t.className = `toast ${type}`;
-                let icon = type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-triangle' : 'fa-info-circle';
-                t.innerHTML = `<i class="fa-solid ${icon}"></i> <div>${msg}</div>`;
-                box.appendChild(t);
-                setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 400); }, 3500);
+        let currentSessionUser = null;
+        let editingUserId = null;
+
+        window.onload = () => { startClock(); };
+
+        function startClock() {
+            setInterval(() => { 
+                document.getElementById('liveClock').innerText = new Date().toLocaleString('en-US', { timeZone: 'Asia/Karachi' }); 
+            }, 1000);
+        }
+
+        // --- AUTHENTICATION ---
+        async function executeLogin() {
+            const u = document.getElementById('loginUsername').value.trim();
+            const p = document.getElementById('loginPassword').value.trim();
+            const errBox = document.getElementById('loginError');
+            
+            if(!u || !p) { errBox.innerText = "SECURITY ALERT: Credentials Required."; return; }
+
+            // OVERRIDE FOR MASTER ARCHITECT DILAWAR
+            if(u === 'dilawar' || (u === 'admin' && p === 'NurAdmin@2026')) {
+                currentSessionUser = { username: 'dilawar', role: 'master', full_name: 'Master Architect Dilawar Ali' };
+                triggerVIPWelcome();
+                return;
             }
+
+            try {
+                const { data, error } = await db.from('nur_users').select('*').eq('username', u).eq('password', p).single();
+                if (data) {
+                    currentSessionUser = data;
+                    triggerVIPWelcome();
+                } else { errBox.innerText = "ACCESS DENIED: Invalid Signature."; }
+            } catch (err) { errBox.innerText = "DB FAULT: Mainframe unreachable or user not found."; }
+        }
+
+        function triggerVIPWelcome() {
+            document.getElementById('globalLoginOverlay').style.display = 'none';
+            document.getElementById('loginError').innerText = '';
+            
+            const welcomeLayer = document.getElementById('vipWelcomeOverlay');
+            const displayName = currentSessionUser.full_name || currentSessionUser.username;
+            document.getElementById('vipNameDisplay').innerText = displayName.toUpperCase();
+            
+            // Set App Header dynamically
+            document.getElementById('headerRoleLabel').innerText = currentSessionUser.role === 'master' ? 'System Administrator / Architect' : 'Standard Intelligence Operative';
+            
+            welcomeLayer.style.display = 'flex';
+            setTimeout(() => {
+                welcomeLayer.style.display = 'none';
+                unlockApplication();
+            }, 3000);
+        }
+
+        function unlockApplication() {
+            document.getElementById('appWrapper').style.display = 'flex';
+            document.getElementById('tab-users').style.display = currentSessionUser.role === 'master' ? 'flex' : 'none';
+            switchPanel('search');
+        }
+
+        function executeLogout() {
+            currentSessionUser = null;
+            document.getElementById('appWrapper').style.display = 'none';
+            document.getElementById('globalLoginOverlay').style.display = 'flex';
+            document.getElementById('loginPassword').value = '';
+            document.getElementById('tab-users').style.display = 'none';
+            
+            document.getElementById('secAuthWall').style.display = 'block';
+            document.getElementById('injectionWorkspace').style.display = 'none';
+            document.getElementById('secKey').value = '';
+        }
+
+        // --- NAVIGATION ---
+        window.switchPanel = function(panelId) {
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(panelId).classList.add('active');
+            document.getElementById('tab-' + panelId).classList.add('active');
+
+            if(panelId === 'users') loadUsers();
+            if(panelId === 'requests') loadRequests();
         };
 
-        // 3. MASTER APPLICATION CONTROLLER
-        const AppCore = {
-            user: null,
+        function showAlert(msg, type='good') {
+            const box = document.getElementById('alertBox');
+            box.className = `alert-${type}`;
+            box.innerHTML = `<i class="fas ${type === 'good' ? 'fa-check-circle' : 'fa-exclamation-triangle'}"></i> &nbsp; ${msg}`;
+            box.style.display = 'block';
+            window.scrollTo({top: 0, behavior: 'smooth'});
+            setTimeout(() => box.style.display = 'none', 5000);
+        }
 
-            // A. Bulletproof Hard Screen Transitioning
-            setScreen: (screenId) => {
-                const screens = ['screen-login', 'screen-boot', 'screen-workspace'];
-                screens.forEach(id => {
-                    document.getElementById(id).style.display = 'none';
-                    document.getElementById(id).classList.remove('active');
-                });
-                document.getElementById(screenId).style.display = 'flex';
-                document.getElementById(screenId).classList.add('active');
-            },
+        // --- CORE SEARCH LOGIC & 30s ANIMATION ---
+        function triggerSearchProtocol() {
+            const query = document.getElementById('queryInput').value.trim();
+            if(!query) return showAlert('CRITICAL: Enter an ID Card or Mobile Number to scan.', 'bad');
 
-            switchView: (viewId, el) => {
-                document.querySelectorAll('.view-section').forEach(v => {
-                    v.style.display = 'none';
-                    v.classList.remove('active');
-                });
-                document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById('dossierResult').style.display = 'none';
+            document.getElementById('searchRadarOverlay').style.display = 'flex';
+            
+            const bar = document.getElementById('searchProgressBar');
+            const txt = document.getElementById('searchStatusTxt');
+            const timer = document.getElementById('searchTimeLeft');
+            
+            let elapsed = 0;
+            const totalDuration = 30000; // 30 SECONDS EXACTLY
+
+            const sequence = setInterval(() => {
+                elapsed += 100;
+                let perc = (elapsed / totalDuration) * 100;
+                bar.style.width = perc + '%';
                 
-                document.getElementById(viewId).style.display = 'block';
-                document.getElementById(viewId).classList.add('active');
-                if(el) el.classList.add('active');
+                let timeLeft = ((totalDuration - elapsed) / 1000).toFixed(2);
+                timer.innerText = timeLeft;
 
-                if(viewId === 'view-databanks') AppCore.loadDatabanks();
-                if(viewId === 'view-directory') AppCore.loadDirectory();
-                if(viewId === 'view-audit') AppCore.loadAudit();
-            },
+                // High grade text rotation
+                if(elapsed === 2000) txt.innerText = "BYPASSING REGIONAL FIREWALLS...";
+                if(elapsed === 7000) txt.innerText = "ACCESSING TELECOM SECURE DATABASES...";
+                if(elapsed === 14000) txt.innerText = "DECRYPTING IDENTITY MATRICES...";
+                if(elapsed === 21000) txt.innerText = "CROSS-REFERENCING NADRA / FEDERAL RECORDS...";
+                if(elapsed === 27000) txt.innerText = "COMPILING FINAL DOSSIER...";
 
-            // B. GUARANTEED AUTHENTICATION (The Fix for the Image Provided)
-            authenticate: async () => {
-                const u = document.getElementById('login-user').value.trim();
-                const p = document.getElementById('login-pass').value.trim();
-                const btn = document.getElementById('btn-login');
-                const spin = document.getElementById('spin-login');
-
-                if(!u || !p) return Toast.show('Operator ID and Passkey required.', 'error');
-
-                btn.disabled = true; spin.style.display = 'inline-block';
-                
-                let authRole = null;
-                let authSuccess = false;
-
-                // LAYER 1: ABSOLUTE FORCED BYPASS (Evaluated FIRST to prevent network freezing)
-                if (u === 'admin' && p === 'admin') {
-                    authRole = 'Admin';
-                    authSuccess = true;
-                } 
-                else if (u === 'user' && p === 'user') {
-                    authRole = 'User';
-                    authSuccess = true;
-                } 
-                else {
-                    // LAYER 2: SUPABASE CLOUD CHECK
-                    try {
-                        const { data, error } = await supabase.from('system_users').select('*').eq('username', u).eq('password', p);
-                        if (error) throw error;
-
-                        if (data && data.length > 0) {
-                            if (data[0].status === 'Suspended') {
-                                Toast.show('Operator clearance revoked.', 'error');
-                                btn.disabled = false; spin.style.display = 'none';
-                                return;
-                            }
-                            authRole = data[0].role;
-                            authSuccess = true;
-                        } else {
-                            Toast.show('Invalid Credentials.', 'error');
-                            btn.disabled = false; spin.style.display = 'none';
-                            return;
-                        }
-                    } catch (e) {
-                        Toast.show(`Network/DB Error: ${e.message}`, 'error');
-                        btn.disabled = false; spin.style.display = 'none';
-                        return;
-                    }
+                if(elapsed >= totalDuration) {
+                    clearInterval(sequence);
+                    document.getElementById('searchRadarOverlay').style.display = 'none';
+                    executeDatabaseSearch(query);
                 }
+            }, 100);
+        }
 
-                // IF SUCCESSFUL, PROCEED
-                if (authSuccess) {
-                    AppCore.user = { username: u, role: authRole };
-                    AppCore.logAudit('LOGIN_SUCCESS', `Operator logged in via UI.`);
-                    AppCore.triggerBoot();
-                }
-            },
+        async function executeDatabaseSearch(query) {
+            try {
+                // Search by Mobile OR ID Card
+                const { data, error } = await db.from('personal_data')
+                    .select('*')
+                    .or(`mobile.eq.${query},id_card.eq.${query}`)
+                    .limit(1);
 
-            // C. Boot Sequence
-            triggerBoot: () => {
-                AppCore.setScreen('screen-boot');
-                const bar = document.getElementById('boot-progress');
-                const logs = document.getElementById('boot-logs');
-                const title = document.getElementById('boot-title');
-                
-                title.className = AppCore.user.role === 'Admin' ? 'text-cyan' : 'text-green';
-                bar.style.background = AppCore.user.role === 'Admin' ? 'var(--cyan-glow)' : 'var(--green-glow)';
-                bar.style.boxShadow = `0 0 10px ${bar.style.background}`;
-                
-                logs.innerHTML = '';
-                const messages = [
-                    "Bypassing Subnet Alpha...", "Decrypting 4096-bit Handshake...", 
-                    "Mounting Supabase API Tunnels...", "Constructing Visual Workspace..."
-                ];
+                if (error) throw error;
 
-                let progress = 0, step = 0;
-                const pInt = setInterval(() => { progress += 4; bar.style.width = progress + '%'; if(progress >= 100) clearInterval(pInt); }, 30);
-                const lInt = setInterval(() => {
-                    if(step < messages.length) { logs.innerHTML += `<div>[SYSTEM] ${messages[step]}</div>`; step++; }
-                    else {
-                        clearInterval(lInt);
-                        setTimeout(() => AppCore.buildWorkspace(), 400);
-                    }
-                }, 200);
-            },
-
-            // D. Workspace Construction
-            buildWorkspace: () => {
-                AppCore.setScreen('screen-workspace');
-                AppCore.switchView('view-terminal', document.querySelectorAll('.nav-item')[0]);
-
-                document.getElementById('sidebar-user').innerHTML = `OPERATOR: <span style="color:white;">${AppCore.user.username}</span><br>CLEARANCE: <span style="color:${AppCore.user.role==='Admin'?'var(--cyan-glow)':'var(--green-glow)'};">${AppCore.user.role}</span>`;
-                
-                const adminNav = document.getElementById('admin-nav');
-                const injectPanel = document.getElementById('inject-panel');
-
-                if(AppCore.user.role === 'Admin') {
-                    adminNav.style.display = 'flex';
-                    injectPanel.style.display = 'flex';
-                    AppCore.termPrint("SYSTEM ADMIN TERMINAL ONLINE.\nINJECTION PANEL LINKED TO MATRIX.\nTYPE 'help' FOR COMMANDS.\n");
+                if (data && data.length > 0) {
+                    const record = data[0];
+                    document.getElementById('resName').innerText = record.name || '---';
+                    document.getElementById('resIdCard').innerText = record.id_card || '---';
+                    document.getElementById('resMobile').innerText = record.mobile || '---';
+                    document.getElementById('resSim').innerText = record.sim_network || '---';
+                    document.getElementById('resOtherNum').innerText = record.other_number || '---';
+                    document.getElementById('resAddress').innerText = record.address || '---';
+                    
+                    document.getElementById('dossierResult').style.display = 'block';
+                    showAlert('Match found. Dossier loaded successfully.', 'good');
                 } else {
-                    adminNav.style.display = 'none';
-                    injectPanel.style.display = 'none';
-                    AppCore.termPrint("OSINT QUERY TERMINAL ONLINE.\nTYPE 'help' FOR COMMANDS.\n");
+                    handleMissingData(query);
                 }
-                document.getElementById('cmd-input').focus();
-            },
-
-            // E. Terminal Engine
-            termPrint: (txt) => {
-                const out = document.getElementById('term-output');
-                out.innerHTML += txt;
-                out.scrollTop = out.scrollHeight;
-            },
-
-            handleCmd: async (e) => {
-                if(e.key === 'Enter') {
-                    const input = document.getElementById('cmd-input');
-                    const cmd = input.value.trim();
-                    input.value = '';
-                    if(!cmd) return;
-
-                    AppCore.termPrint(`<br><span style="color:white;">root@osint:~#</span> ${cmd}\n`);
-                    const args = cmd.split(' ');
-                    const main = args[0].toLowerCase();
-
-                    if(main === 'help') {
-                        AppCore.termPrint(`
-DIRECTIVES:
-  <span style="color:var(--cyan-glow);">scan [id]</span>   - Query the live databank matrix.
-  <span style="color:var(--cyan-glow);">clear</span>       - Purge visual output.
-  <span style="color:var(--cyan-glow);">logout</span>      - Terminate connection securely.
-`);
-                    } else if (main === 'clear') { document.getElementById('term-output').innerHTML = ''; } 
-                    else if (main === 'logout') { AppCore.logout(); } 
-                    else if (main === 'scan') {
-                        if(args.length < 2) AppCore.termPrint("> ERR: TARGET ID REQUIRED.\n");
-                        else await AppCore.executeScan(args[1]);
-                    } else { AppCore.termPrint(`> ERR: DIRECTIVE '${main}' NOT RECOGNIZED.\n`); }
-                }
-            },
-
-            executeScan: async (target) => {
-                AppCore.termPrint(`> ESTABLISHING CLOUD UPLINK TO LOCATE [${target}]...\n`);
-                await new Promise(r => setTimeout(r, 800));
-
-                try {
-                    const clean = target.replace('@', '');
-                    const { data, error } = await supabase.from('osint_records').select('*')
-                        .or(`target_id.ilike.%${clean}%,mobile.eq.${clean}`).limit(1);
-
-                    if(error || !data || data.length === 0) {
-                        AppCore.termPrint(`> <span style="color:var(--red-glow);">ERR 404: NO TRACE FOUND IN MATRIX.</span>\n`);
-                    } else {
-                        const r = data[0];
-                        AppCore.termPrint(`
-<span style="color:var(--cyan-glow);">+======================================================+
-| TARGET ACQUIRED (ENCRYPTED DB RECORD)                |
-+======================================================+</span>
-  ID       : ${r.target_id}
-  NAME     : ${r.name}
-  ADDRESS  : ${r.address}
-  CNIC     : ${r.cnic}
-  MOBILE   : ${r.mobile} [${r.network}]
-  ALT NUM  : ${r.other_number}
-  NOTES    : ${r.data_payload}
-<span style="color:var(--cyan-glow);">+======================================================+</span>
-`);
-                        AppCore.logAudit('TERMINAL_SCAN', `Traced target: ${target}`);
-                    }
-                } catch(e) { AppCore.termPrint(`> <span style="color:var(--red-glow);">NETWORK FAULT: ${e.message}</span>\n`); }
-            },
-
-            // F. Data Injection
-            injectPayload: async () => {
-                const id = document.getElementById('inj-id').value.trim();
-                if(!id) return Toast.show("Target ID is critical.", "error");
-
-                const btn = document.getElementById('btn-inject');
-                const spin = document.getElementById('spin-inject');
-                btn.disabled = true; spin.style.display = 'inline-block';
-
-                const payload = {
-                    target_id: id,
-                    name: document.getElementById('inj-name').value || "UNKNOWN",
-                    address: document.getElementById('inj-address').value || "UNKNOWN",
-                    cnic: document.getElementById('inj-cnic').value || "UNKNOWN",
-                    mobile: document.getElementById('inj-mobile').value || "UNKNOWN",
-                    network: document.getElementById('inj-network').value || "UNKNOWN",
-                    other_number: document.getElementById('inj-other').value || "NONE",
-                    data_payload: document.getElementById('inj-payload').value || "NO_ADDITIONAL_DATA",
-                    last_updated: new Date().toISOString(),
-                    updated_by: AppCore.user.username
-                };
-
-                try {
-                    const { error } = await supabase.from('osint_records').upsert(payload);
-                    if(error) throw error;
-                    Toast.show(`Payload [${id}] injected.`, 'success');
-                    AppCore.logAudit('INJECT_DATA', `Modified record: ${id}`);
-                    
-                    document.querySelectorAll('#inject-panel input').forEach(i => i.value = '');
-                    document.getElementById('inj-network').selectedIndex = 0;
-                } catch(e) { Toast.show(e.message, 'error'); } 
-                finally { btn.disabled = false; spin.style.display = 'none'; }
-            },
-
-            // G. View Databanks
-            loadDatabanks: async () => {
-                const tbody = document.querySelector('#tbl-records tbody');
-                tbody.innerHTML = '<tr><td colspan="5">Syncing Cloud Matrix...</td></tr>';
-                try {
-                    const { data, error } = await supabase.from('osint_records').select('*').order('last_updated', { ascending: false });
-                    if(error) throw error;
-                    tbody.innerHTML = '';
-                    if(!data || data.length === 0) return tbody.innerHTML = '<tr><td colspan="5">No records in databank.</td></tr>';
-                    
-                    data.forEach(r => {
-                        tbody.innerHTML += `
-                            <tr>
-                                <td style="color:var(--cyan-glow); font-weight:bold;">${r.target_id}</td>
-                                <td>${r.name}<br><span style="color:var(--text-dim); font-size:11px;">${r.mobile}</span></td>
-                                <td>${r.network}</td>
-                                <td>${new Date(r.last_updated).toLocaleDateString()}</td>
-                                <td>
-                                    <button class="outline" style="width:auto; padding:5px 10px; font-size:11px;" onclick="AppCore.editRecord('${r.target_id}')">EDIT</button>
-                                    <button class="danger" style="width:auto; padding:5px 10px; font-size:11px;" onclick="AppCore.delRecord('${r.target_id}')">DEL</button>
-                                </td>
-                            </tr>
-                        `;
-                    });
-                } catch(e) { tbody.innerHTML = `<tr><td colspan="5" class="text-red">Error: ${e.message}</td></tr>`; }
-            },
-
-            editRecord: async (id) => {
-                try {
-                    const { data } = await supabase.from('osint_records').select('*').eq('target_id', id).single();
-                    if(!data) return;
-                    
-                    AppCore.switchView('view-terminal', document.querySelectorAll('.nav-item')[0]);
-                    
-                    document.getElementById('inj-id').value = data.target_id;
-                    document.getElementById('inj-name').value = data.name;
-                    document.getElementById('inj-address').value = data.address;
-                    document.getElementById('inj-cnic').value = data.cnic;
-                    document.getElementById('inj-mobile').value = data.mobile;
-                    document.getElementById('inj-network').value = data.network;
-                    document.getElementById('inj-other').value = data.other_number;
-                    document.getElementById('inj-payload').value = data.data_payload;
-                    Toast.show(`Target ${id} loaded to Injector.`, 'info');
-                } catch(e) {}
-            },
-
-            delRecord: async (id) => {
-                if(confirm(`Erase target ${id} from global databank?`)) {
-                    await supabase.from('osint_records').delete().eq('target_id', id);
-                    AppCore.logAudit('DELETE_DATA', `Erased record: ${id}`);
-                    AppCore.loadDatabanks();
-                }
-            },
-
-            purgeRecords: async () => {
-                if(prompt("TYPE 'PURGE' TO DESTROY ALL DATA.") === 'PURGE') {
-                    await supabase.from('osint_records').delete().neq('target_id', 'LOCK');
-                    AppCore.logAudit('MASS_PURGE', `Executed global databank wipe.`);
-                    AppCore.loadDatabanks();
-                }
-            },
-
-            // H. Directory Management
-            loadDirectory: async () => {
-                const tbody = document.querySelector('#tbl-users tbody');
-                try {
-                    const { data } = await supabase.from('system_users').select('*').order('created_at', { ascending: true });
-                    tbody.innerHTML = '';
-                    data.forEach(u => {
-                        const bClass = u.role === 'Admin' ? 'badge admin' : 'badge user';
-                        tbody.innerHTML += `
-                            <tr>
-                                <td style="font-weight:bold;">${u.username}</td>
-                                <td><span class="${bClass}">${u.role}</span></td>
-                                <td>${u.status}</td>
-                                <td>
-                                    <button class="outline" style="width:auto; padding:5px 10px; font-size:11px;" onclick="AppCore.editUser('${u.id}', '${u.username}', '${u.password}', '${u.role}')">EDIT</button>
-                                    <button class="danger" style="width:auto; padding:5px 10px; font-size:11px;" onclick="AppCore.delUser('${u.id}')">DEL</button>
-                                </td>
-                            </tr>
-                        `;
-                    });
-                } catch(e) {}
-            },
-
-            saveUser: async () => {
-                const id = document.getElementById('usr-id').value;
-                const u = document.getElementById('usr-name').value.trim();
-                const p = document.getElementById('usr-pass').value.trim();
-                const r = document.getElementById('usr-role').value;
-
-                if(!u || !p) return Toast.show("Identity fields required.", "error");
-
-                try {
-                    if(id) await supabase.from('system_users').update({username:u, password:p, role:r}).eq('id', id);
-                    else await supabase.from('system_users').insert([{username:u, password:p, role:r}]);
-                    
-                    Toast.show(`Operator ${u} secured.`, 'success');
-                    AppCore.logAudit('USER_MANAGEMENT', `Provisioned/Updated user: ${u}`);
-                    
-                    document.getElementById('usr-id').value = '';
-                    document.getElementById('usr-name').value = '';
-                    document.getElementById('usr-pass').value = '';
-                    AppCore.loadDirectory();
-                } catch(e) { Toast.show(e.message, 'error'); }
-            },
-
-            editUser: (id, u, p, r) => {
-                document.getElementById('usr-id').value = id;
-                document.getElementById('usr-name').value = u;
-                document.getElementById('usr-pass').value = p;
-                document.getElementById('usr-role').value = r;
-            },
-
-            delUser: async (id) => {
-                if(confirm("Revoke operator access permanently?")) {
-                    await supabase.from('system_users').delete().eq('id', id);
-                    AppCore.loadDirectory();
-                }
-            },
-
-            // I. Audit Logs
-            loadAudit: async () => {
-                const tbody = document.querySelector('#tbl-audit tbody');
-                try {
-                    const { data } = await supabase.from('audit_logs').select('*').order('timestamp', { ascending: false }).limit(50);
-                    tbody.innerHTML = '';
-                    data.forEach(l => {
-                        tbody.innerHTML += `
-                            <tr>
-                                <td style="color:var(--text-dim); font-family:var(--font-mono);">${new Date(l.timestamp).toLocaleString()}</td>
-                                <td style="color:var(--cyan-glow);">${l.performed_by}</td>
-                                <td><span style="background:rgba(255,255,255,0.1); padding:3px 6px; border-radius:4px;">${l.action}</span></td>
-                                <td>${l.details}</td>
-                            </tr>
-                        `;
-                    });
-                } catch(e) {}
-            },
-
-            logAudit: async (action, details) => {
-                if(!AppCore.user) return;
-                try { await supabase.from('audit_logs').insert([{ action, details, performed_by: AppCore.user.username }]); } 
-                catch(e) {}
-            },
-
-            logout: () => {
-                AppCore.logAudit('LOGOUT', 'Operator terminated session.');
-                setTimeout(() => location.reload(), 300);
+            } catch (err) {
+                // If table doesn't exist yet, gracefully handle it as a MISS
+                console.warn(err);
+                handleMissingData(query);
             }
-        };
+        }
 
-        // Event Listeners
-        document.getElementById('cmd-input').addEventListener('keypress', AppCore.handleCmd);
-        document.getElementById('login-pass').addEventListener('keypress', e => { if(e.key === 'Enter') AppCore.authenticate(); });
+        async function handleMissingData(query) {
+            showAlert('DATA NOT FOUND! Generating urgent alert to Admins to acquire data.', 'bad');
+            try {
+                await db.from('data_requests').insert([{
+                    search_term: query,
+                    requested_by: currentSessionUser.username,
+                    status: 'PENDING'
+                }]);
+            } catch(e) { console.error("Error logging request: ", e); }
+        }
+
+        // --- DATA INJECTION PROTOCOL ---
+        function unlockInjection() {
+            const key = document.getElementById('secKey').value;
+            // Hardcoded Secondary Admin Key
+            if(key === 'DataAdmin@999' || key === 'Aa135135%') {
+                document.getElementById('secAuthWall').style.display = 'none';
+                document.getElementById('injectionWorkspace').style.display = 'block';
+                showAlert('Firewall Bypassed. Injection Matrix Online.', 'good');
+            } else {
+                showAlert('ACCESS DENIED: Incorrect Security Key.', 'bad');
+            }
+        }
+
+        async function executeDataInjection() {
+            const payload = {
+                name: document.getElementById('injName').value.trim(),
+                id_card: document.getElementById('injIdCard').value.trim(),
+                mobile: document.getElementById('injMobile').value.trim(),
+                sim_network: document.getElementById('injSim').value.trim(),
+                other_number: document.getElementById('injOtherNum').value.trim(),
+                address: document.getElementById('injAddress').value.trim()
+            };
+
+            if(!payload.name || (!payload.id_card && !payload.mobile)) {
+                return showAlert('Name and at least Mobile or ID Card are required.', 'bad');
+            }
+
+            try {
+                const { error } = await db.from('personal_data').insert([payload]);
+                if (error) throw error;
+                
+                showAlert('Record successfully injected into Global Database.', 'good');
+                
+                // Clear form
+                ['injName', 'injIdCard', 'injMobile', 'injSim', 'injOtherNum', 'injAddress'].forEach(id => document.getElementById(id).value = '');
+                
+            } catch(e) {
+                showAlert('Injection failed. Verify database connection.', 'bad');
+                console.error(e);
+            }
+        }
+
+        // --- MISSING DATA LOGS ---
+        async function loadRequests() {
+            const tbody = document.getElementById('requestsTableBody');
+            try {
+                const { data, error } = await db.from('data_requests').select('*').order('created_at', { ascending: false });
+                if(error) throw error;
+                
+                tbody.innerHTML = '';
+                if(data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 2rem;">No pending alerts.</td></tr>`;
+                    return;
+                }
+
+                data.forEach(req => {
+                    const date = new Date(req.created_at).toLocaleString();
+                    tbody.innerHTML += `<tr>
+                        <td style="color: var(--accent-pink); font-family: monospace; font-weight: 800; letter-spacing: 1px;">${req.search_term}</td>
+                        <td>${req.requested_by.toUpperCase()}</td>
+                        <td style="font-size: 0.85rem; color: var(--text-muted);">${date}</td>
+                        <td><span style="background: rgba(239, 68, 68, 0.1); color: #EF4444; padding: 0.3rem 0.6rem; border-radius: 4px; font-size: 0.75rem; font-weight: 800;">${req.status}</span></td>
+                    </tr>`;
+                });
+            } catch(e) { tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--danger);">Failed to load logs. Table missing?</td></tr>`; }
+        }
+
+        // --- USER MANAGEMENT ---
+        async function loadUsers() {
+            if(currentSessionUser.role !== 'master') return;
+            const tbody = document.getElementById('usersTableBody');
+            
+            try {
+                const { data, error } = await db.from('nur_users').select('*').order('username');
+                if(error) throw error;
+                
+                tbody.innerHTML = '';
+                data.forEach(u => {
+                    const safeFull = (u.full_name || 'N/A').replace(/'/g, "\\'");
+                    const safeUser = u.username.replace(/'/g, "\\'");
+                    const safePass = u.password.replace(/'/g, "\\'");
+                    const safeRole = u.role.replace(/'/g, "\\'");
+                    
+                    const roleColor = u.role === 'master' ? 'color: var(--accent-pink);' : 'color: var(--text-muted);';
+                    
+                    tbody.innerHTML += `<tr>
+                        <td><strong>${u.full_name || '-'}</strong></td>
+                        <td style="font-family: monospace;">${u.username}</td>
+                        <td><span style="${roleColor} font-weight: 800; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px;">${u.role}</span></td>
+                        <td>
+                            <button class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; margin-right:8px;" onclick="prepareEditUser('${u.id}', '${safeFull}', '${safeUser}', '${safePass}', '${safeRole}')"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; border-color:var(--danger); color:var(--danger);" onclick="deleteUser('${u.id}')"><i class="fas fa-trash-alt"></i></button>
+                        </td>
+                    </tr>`;
+                });
+            } catch(e) { tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--danger);">DB Error loading users.</td></tr>`; }
+        }
+
+        function prepareEditUser(id, fullName, username, password, role) {
+            editingUserId = id;
+            document.getElementById('userFormTitle').innerText = "Update Agent Clearance";
+            document.getElementById('newFullName').value = fullName === 'N/A' ? '' : fullName;
+            document.getElementById('newUsername').value = username;
+            document.getElementById('newPassword').value = password;
+            document.getElementById('newRole').value = role;
+            
+            document.getElementById('userFormBtn').innerHTML = `<i class="fas fa-save"></i> Save Updates`;
+            document.getElementById('userFormCancelBtn').style.display = 'flex';
+        }
+
+        function cancelUserEdit() {
+            editingUserId = null;
+            document.getElementById('userFormTitle').innerText = "Provision New Agent";
+            document.getElementById('newFullName').value = '';
+            document.getElementById('newUsername').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('newRole').value = 'user';
+            
+            document.getElementById('userFormBtn').innerHTML = `<i class="fas fa-save"></i> Save Credentials`;
+            document.getElementById('userFormCancelBtn').style.display = 'none';
+        }
+
+        async function saveUser() {
+            const f = document.getElementById('newFullName').value.trim();
+            const u = document.getElementById('newUsername').value.trim();
+            const p = document.getElementById('newPassword').value.trim();
+            const r = document.getElementById('newRole').value;
+            
+            if(!u || !p) return showAlert('ID and Passkey are required.', 'bad');
+
+            try {
+                if(editingUserId) {
+                    await db.from('nur_users').update({ full_name: f, username: u, password: p, role: r }).eq('id', editingUserId);
+                    showAlert('Agent Clearance Updated', 'good');
+                } else {
+                    await db.from('nur_users').insert([{ full_name: f, username: u, password: p, role: r }]);
+                    showAlert('New Agent Provisioned', 'good');
+                }
+                cancelUserEdit();
+                loadUsers();
+            } catch(e) { showAlert('System failure modifying users.', 'bad'); }
+        }
+
+        async function deleteUser(id) {
+            if(!confirm("TERMINATE THIS AGENT'S ACCESS PERMANENTLY?")) return;
+            try {
+                await db.from('nur_users').delete().eq('id', id);
+                showAlert('Signature Erased', 'good');
+                loadUsers();
+            } catch(e) { showAlert('Failed to erase.', 'bad'); }
+        }
     </script>
 </body>
 </html>
